@@ -1,0 +1,5 @@
+# Yolo audit verifier — Python dependencies.
+# rfc8785: genuine RFC 8785 (JSON Canonicalization Scheme) implementation — required for the
+# v2 payload_hash recompute. Do NOT substitute json.dumps(sort_keys=True): it is NOT
+# JCS-conformant (sorts by Unicode code point, not UTF-16 code unit; wrong number formatting).
+rfc8785==0.1.4

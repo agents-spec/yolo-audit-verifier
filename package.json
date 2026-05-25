@@ -1,0 +1,16 @@
+{
+  "name": "yolo-audit-verifier",
+  "version": "1.0.0",
+  "description": "Independent, trustless verifier for Yolo audit entries against Base mainnet.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "verify": "tsx yolo-verify.ts"
+  },
+  "dependencies": {
+    "viem": "^2.48.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}
