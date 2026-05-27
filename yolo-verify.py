@@ -16,13 +16,18 @@ FIVE STEPS:
 
 VERDICT mirrors the /verify page:
   verified | pending_anchor | anchor_root_mismatch | anchored_payload_anomaly |
-  payload_hash_mismatch | onchain_unconfirmed
+  payload_hash_mismatch | onchain_unconfirmed | reference_seed
+
+REFERENCE/SEED: some ids on a frozen allowlist are pre-Strict-B / development entries, not
+production decisions. Their readable payload may be WITHHELD (_redacted) by the proof API; this
+tool then SKIPS steps 1-2 and confirms the entry by Merkle membership alone — never a false
+"payload mismatch". Behaviour for every other id is unchanged (full five-step check).
 
 USAGE:
   python3 yolo-verify.py <audit_id> [--source https://yolo.solutions] [--rpc URL] [--json]
   python3 yolo-verify.py --bundle bundle.json [--rpc URL] [--json]
 EXIT: 0 verified · 2 pending_anchor · 3 anchored_payload_anomaly · 4 onchain_unconfirmed ·
-      5 anchor_root_mismatch · 6 payload_hash_mismatch · 1 error
+      5 anchor_root_mismatch · 6 payload_hash_mismatch · 7 reference_seed · 1 error
 """
 import argparse
 import hashlib
@@ -57,7 +62,8 @@ DEFAULT_SOURCE = "https://yolo.solutions"
 DEFAULT_RPC = "https://mainnet.base.org"  # public; override with --rpc for reliability
 
 EXIT = {"verified": 0, "error": 1, "pending_anchor": 2, "anchored_payload_anomaly": 3,
-        "onchain_unconfirmed": 4, "anchor_root_mismatch": 5, "payload_hash_mismatch": 6}
+        "onchain_unconfirmed": 4, "anchor_root_mismatch": 5, "payload_hash_mismatch": 6,
+        "reference_seed": 7}
 
 
 def sha256_hex(s: str) -> str:
@@ -141,18 +147,33 @@ def verify(bundle: dict, rpc_url: str, anchor_addr: str) -> dict:
     entry, hashes = bundle["entry"], bundle["hashes"]
     steps_out = []
 
+    # Reference/seed entries may have their readable payload WITHHELD (_redacted): steps 1 & 2 are
+    # then skipped (nothing to recompute) and the entry is confirmed by Merkle membership alone.
+    payload = entry.get("payload") or {}
+    redacted = isinstance(payload, dict) and payload.get("_redacted") is True
+    classification = bundle.get("classification") or {}
+    is_ref_seed = classification.get("kind") == "reference_seed"
+
     # 1. payload -> payload_hash
-    recomputed_ph = canon_payload_hash(entry["payload"], entry.get("canon_version"))
-    payload_ok = recomputed_ph == hashes["payload_hash"]
-    cv = entry.get("canon_version") or "v1(null)"
-    steps_out.append(("1. payload -> payload_hash", payload_ok,
-                      f"({cv}) {recomputed_ph[:12]}… {'==' if payload_ok else '!='} stored"))
+    if redacted:
+        payload_ok = None
+        steps_out.append(("1. payload -> payload_hash", None, "payload withheld (reference/seed) — skipped"))
+    else:
+        recomputed_ph = canon_payload_hash(payload, entry.get("canon_version"))
+        payload_ok = recomputed_ph == hashes["payload_hash"]
+        cv = entry.get("canon_version") or "v1(null)"
+        steps_out.append(("1. payload -> payload_hash", payload_ok,
+                          f"({cv}) {recomputed_ph[:12]}… {'==' if payload_ok else '!='} stored"))
 
     # 2. chain_hash binding
-    recomputed_ch = sha256_hex(f"{entry['agent_id']}:{entry['seq']}:{entry['prev_hash']}:{hashes['payload_hash']}")
-    chain_ok = recomputed_ch == hashes["chain_hash"]
-    steps_out.append(("2. chain_hash binding", chain_ok,
-                      f"{recomputed_ch[:12]}… {'==' if chain_ok else '!='} stored chain_hash"))
+    if redacted:
+        chain_ok = None
+        steps_out.append(("2. chain_hash binding", None, "payload withheld (reference/seed) — skipped"))
+    else:
+        recomputed_ch = sha256_hex(f"{entry['agent_id']}:{entry['seq']}:{entry['prev_hash']}:{hashes['payload_hash']}")
+        chain_ok = recomputed_ch == hashes["chain_hash"]
+        steps_out.append(("2. chain_hash binding", chain_ok,
+                          f"{recomputed_ch[:12]}… {'==' if chain_ok else '!='} stored chain_hash"))
 
     anchored = bool(bundle.get("anchored") and bundle.get("anchor") and bundle.get("merkle_proof"))
     if not anchored:
@@ -187,16 +208,20 @@ def verify(bundle: dict, rpc_url: str, anchor_addr: str) -> dict:
     # 5. payload-integrity classification (operator's claim, echoed honestly)
     ph_class = (bundle.get("checks") or {}).get("payload_hash") or {}
 
-    # Verdict — same precedence as the Yolo /verify panel (and the bundled Node verifier).
+    # Verdict — same precedence as the Yolo /verify panel (and the bundled Node verifier):
+    # structural fail > payload-bind fail (served payloads only) > reference/seed > onchain-unconfirmed > verified.
     if not merkle_ok or onchain_ok is False:
         verdict = "anchor_root_mismatch"
-    elif not (payload_ok and chain_ok):
+    elif not redacted and not (payload_ok and chain_ok):
         verdict = "anchored_payload_anomaly" if ph_class.get("status") == "known_legacy_anomaly" else "payload_hash_mismatch"
+    elif is_ref_seed:
+        verdict = "reference_seed"
     elif onchain_ok is None:
         verdict = "onchain_unconfirmed"
     else:
         verdict = "verified"
-    return {"verdict": verdict, "steps": steps_out, "operator_classification": ph_class.get("reason")}
+    return {"verdict": verdict, "steps": steps_out,
+            "operator_classification": classification.get("reason") or ph_class.get("reason")}
 
 
 VERDICT_LINE = {

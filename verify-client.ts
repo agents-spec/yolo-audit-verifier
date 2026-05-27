@@ -1,14 +1,9 @@
-// verify-client.ts — the exact verification logic the Yolo /verify page runs in-browser.
-// (Vendored from the Yolo web app so this verifier is fully self-contained; the Python CLI
-//  reimplements the same logic independently — the two agreeing is the cross-language proof.)
-//
-// The whole point: your own machine does the SHA-256 work and reads the anchored root from
-// Base — trusting your runtime + Base, not Yolo's say-so. Uses Web Crypto
-// (globalThis.crypto.subtle, available in browsers over HTTPS and in Node 20+) and viem for a
-// public Base RPC read. The canonicalizers reproduce the Yolo server's payload_hash exactly.
-//
-// recomputeAndAssess is PURE given (bundle, onChainRoot) — the on-chain root is injected so
-// the verdict logic is unit-testable offline; readOnChainRoot does the actual Base read.
+// verify-client.ts — vendored copy for the standalone Yolo audit verifier (no app dependency).
+// Byte-for-byte the BODY of the Yolo app's client-side verification logic; a drift-guard test in
+// the main repo keeps the two in lockstep. Recomputes payload_hash -> chain_hash -> Merkle root
+// with Web Crypto and reads the anchored root from Base via viem — trusting your runtime + Base,
+// never Yolo. Reference/seed entries may have their payload withheld (_redacted): the payload-hash
+// recompute is then skipped and the entry is confirmed by Merkle membership alone.
 
 import { createPublicClient, http, parseAbi } from "viem";
 import { base } from "viem/chains";
@@ -31,12 +26,15 @@ export type ProofBundle = {
   merkle_proof?: { leaf: string; steps: Array<{ sibling: string; position: "left" | "right" }>; single_leaf_batch: boolean };
   checks?: { root_reconciles?: boolean; payload_hash?: { status: string; recomputed: boolean; canon_version: string; reason: string } };
   note?: string;
+  // Present only for ids on the frozen reference/seed allowlist (lib/audit-proof.ts). `redacted`
+  // means the readable payload was withheld → the client skips payload-hash recompute (membership only).
+  classification?: { kind: string; label: string; redacted: boolean; reason: string };
 };
 
 export type ClientCheck = { label: string; result: "pass" | "fail" | "skip"; detail?: string };
 
 export type VerificationView = {
-  state: "verified" | "pending_anchor" | "anchor_root_mismatch" | "anchored_payload_anomaly" | "payload_hash_mismatch" | "onchain_unconfirmed";
+  state: "verified" | "pending_anchor" | "anchor_root_mismatch" | "anchored_payload_anomaly" | "payload_hash_mismatch" | "onchain_unconfirmed" | "reference_seed";
   verified: boolean;  // true ONLY when fully sound — the green state
   tone: "ok" | "warn" | "bad" | "neutral";
   headline: string;
@@ -129,23 +127,38 @@ export async function readOnChainRoot(agentId: string, firstSeq: number, lastSeq
 
 export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: string | null): Promise<VerificationView> {
   const canon = (bundle.entry.canon_version ?? "v1") as "v1" | "v2";
-  const payloadOk = (await recomputePayloadHash(bundle.entry.payload, canon)) === bundle.hashes.payload_hash;
-  const chainOk   = (await recomputeChainHash(bundle.entry.agent_id, bundle.entry.seq, bundle.entry.prev_hash, bundle.hashes.payload_hash)) === bundle.hashes.chain_hash;
+  // Reference/seed entries may have their readable payload WITHHELD (`_redacted`). When withheld
+  // there is nothing to recompute: payload + chain-hash checks are SKIPPED (null) and the entry is
+  // confirmed by Merkle membership alone. Non-redacted entries get the full unchanged recompute.
+  const redacted  = (bundle.entry.payload as { _redacted?: unknown })?._redacted === true;
+  const isRefSeed = bundle.classification?.kind === "reference_seed";
+  const serverClassification = bundle.classification?.reason ?? bundle.checks?.payload_hash?.reason;
 
-  // PENDING — no anchor yet. We can still confirm the payload binding in-browser.
+  const payloadOk = redacted ? null : (await recomputePayloadHash(bundle.entry.payload, canon)) === bundle.hashes.payload_hash;
+  const chainOk   = redacted ? null : (await recomputeChainHash(bundle.entry.agent_id, bundle.entry.seq, bundle.entry.prev_hash, bundle.hashes.payload_hash)) === bundle.hashes.chain_hash;
+
+  const payloadCheck: ClientCheck = redacted
+    ? { label: "Payload re-hashes to its payload_hash", result: "skip", detail: "payload withheld (reference/seed)" }
+    : { label: "Payload re-hashes to its payload_hash", result: payloadOk ? "pass" : "fail" };
+  const chainCheck: ClientCheck = redacted
+    ? { label: "Chain hash binds the payload to this entry", result: "skip", detail: "payload withheld (reference/seed)" }
+    : { label: "Chain hash binds the payload to this entry", result: chainOk ? "pass" : "fail" };
+
+  // PENDING — no anchor yet. We can still confirm the payload binding in-browser (when served).
   if (!bundle.anchored || !bundle.anchor || !bundle.merkle_proof) {
     return {
       state: "pending_anchor",
       verified: false,
       tone: "neutral",
       headline: "Recorded — not yet anchored on-chain",
-      note: "This entry is in the append-only log but has not been anchored on Base yet. Your browser confirmed the payload hashes below; a Merkle anchor will exist after the next nightly anchor. Do not treat this entry as anchored.",
+      note: "This entry is in the append-only log but has not been anchored on Base yet. A Merkle anchor will exist after the next nightly anchor. Do not treat this entry as anchored.",
       checks: [
-        { label: "Payload re-hashes to its payload_hash", result: payloadOk ? "pass" : "fail" },
-        { label: "Chain hash binds the payload to this entry", result: chainOk ? "pass" : "fail" },
+        payloadCheck,
+        chainCheck,
         { label: "Merkle proof reconciles to an anchored root", result: "skip", detail: "no anchor yet" },
         { label: "Anchored root matches Base mainnet", result: "skip", detail: "no anchor yet" },
       ],
+      serverClassification,
     };
   }
 
@@ -153,11 +166,10 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   const apiRoot         = bundle.anchor.root.toLowerCase();
   const merkleMatchesApi = recomputedRoot === apiRoot;
   const onChainOk        = onChainRoot !== null ? recomputedRoot === onChainRoot.toLowerCase() : null;
-  const serverClassification = bundle.checks?.payload_hash?.reason;
 
   const checks: ClientCheck[] = [
-    { label: "Payload re-hashes to its payload_hash", result: payloadOk ? "pass" : "fail" },
-    { label: "Chain hash binds the payload to this entry", result: chainOk ? "pass" : "fail" },
+    payloadCheck,
+    chainCheck,
     {
       label: "Merkle proof reconciles to the proof's root",
       result: merkleMatchesApi ? "pass" : "fail",
@@ -170,8 +182,9 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     },
   ];
 
-  // (1) Structurally invalid: the proof doesn't reconcile to the claimed root, OR the
-  // claimed root isn't the one on Base. Either way, NOT verifiably anchored.
+  // (1) Structurally invalid: the proof doesn't reconcile to the claimed root, OR the claimed root
+  // isn't the one on Base. A GENUINE failure — surfaced even for reference/seed entries (a label
+  // never hides a real integrity problem; this is how id 14's corrupt anchor still reads "bad").
   if (!merkleMatchesApi || onChainOk === false) {
     return {
       state: "anchor_root_mismatch",
@@ -182,11 +195,13 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
         ? "Your browser recomputed the Merkle root from this proof and it does NOT match the root in the bundle. The anchor data is inconsistent — this entry is NOT verifiably anchored."
         : "Your browser recomputed the Merkle root and it does NOT match the root anchored on Base mainnet. Do not trust this proof.",
       checks,
+      serverClassification,
     };
   }
 
-  // (2) Root is sound, but the payload does not bind to it.
-  if (!payloadOk || !chainOk) {
+  // (2) Root is sound, but the payload does not bind to it. Only meaningful when the payload is
+  // SERVED — skipped for redacted reference/seed entries (there is no payload to bind).
+  if (!redacted && (!payloadOk || !chainOk)) {
     const known = bundle.checks?.payload_hash?.status === "known_legacy_anomaly";
     return {
       state: known ? "anchored_payload_anomaly" : "payload_hash_mismatch",
@@ -198,6 +213,29 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
       note: known
         ? "Your browser confirmed this entry's chain hash is anchored on Base, but the stored payload does NOT re-hash to its recorded payload_hash. The operator classifies this as a documented legacy anomaly (BUG-SEQ0) — NOT tampering — but it cannot be shown as fully verified."
         : "Your browser confirmed the Merkle anchor, but the stored payload does NOT re-hash to its recorded payload_hash and this is not a known legacy anomaly. Treat as a potential integrity issue.",
+      checks,
+      serverClassification,
+    };
+  }
+
+  // (R) Reference/seed: Merkle membership is sound (and, when served, the payload binds too). This
+  // is real anchored chain history but NOT a production decision — shown NEUTRAL, never green.
+  if (isRefSeed) {
+    const onChainConfirmed = onChainOk === true;
+    return {
+      state: "reference_seed",
+      verified: false,
+      tone: "neutral",
+      headline: "REFERENCE / SEED ENTRY — not a production decision",
+      note:
+        (redacted
+          ? "A pre-Strict-B substrate-test entry from Yolo's development phase; its readable payload is withheld. "
+          : "A development-phase reference/seed entry, not a production decision. ") +
+        (onChainConfirmed
+          ? "Your browser confirmed its chain hash is anchored on Base mainnet — Merkle membership verified" +
+            (redacted ? "; the payload-hash recompute is skipped because the payload is withheld." : ".")
+          : "The Merkle proof reconciles to the bundle's root, but a Base RPC was unreachable to confirm it on-chain — retry, or open the tx on Basescan.") +
+        " It is labeled reference/seed so it is never mistaken for a production record.",
       checks,
       serverClassification,
     };
@@ -215,7 +253,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     };
   }
 
-  // (4) Fully sound: payload binds, Merkle reconciles, and the root is the one on Base.
+  // (4) Fully sound production entry: payload binds, Merkle reconciles, root is the one on Base.
   return {
     state: "verified",
     verified: true,

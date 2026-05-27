@@ -19,6 +19,7 @@ const PUBLISHED_ANCHOR = "0xDf5e1c1e82880C0E9dce3758A58e62189Ca365FD";
 const EXIT: Record<VerificationView["state"], number> = {
   verified: 0, pending_anchor: 2, anchored_payload_anomaly: 3,
   onchain_unconfirmed: 4, anchor_root_mismatch: 5, payload_hash_mismatch: 6,
+  reference_seed: 7, // pre-Strict-B / development reference-seed entry — chain membership only, not a production decision
 };
 
 const flag = (name: string): string | undefined => {
