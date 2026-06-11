@@ -7,7 +7,7 @@ same entry producing the same verdict in both is the cross-language trust proof.
 
 ## Trust model — what you rely on
 - The **public proof bundle** (`https://yolo.solutions/api/verify/{id}/proof`, or any copy you already hold).
-- A **public Base RPC of your choosing** (`--rpc`).
+- A **public Base RPC** — the Node tool auto-selects one (and falls back across several); override with `--rpc` if you want to pin your own.
 - The **published `YoloAuditAnchor` address** (`0xDf5e1c1e82880C0E9dce3758A58e62189Ca365FD`) — a public constant you confirm once (Basescan / `/methodology`).
 
 You do **not** rely on Yolo's servers to compute anything: both tools recompute every hash locally and read the root from Base themselves.
@@ -39,14 +39,22 @@ documented inline in `yolo-verify.py` (`read_onchain_root`). Selector: `0x370dd8
 ## Node — the browser's exact logic
 ```sh
 npm install
-npx tsx yolo-verify.ts 35 --rpc https://your-base-rpc
+npx tsx yolo-verify.ts 49                                # zero-flag: auto-selects a reliable public Base RPC
+npx tsx yolo-verify.ts 49 --rpc https://your-base-rpc    # or pin your own endpoint
 ```
 On-chain read = **Approach A**: `getAnchor(agentId, i)` matched by seq-range — the same code the
-`/verify` page runs, bundled here as `verify-client.ts`.
+`/verify` page runs, bundled here as `verify-client.ts`. The CLI tries your `--rpc` (if given)
+first, then **automatically falls back** through a curated list of public Base RPCs on any
+rate-limit/transport error — so the zero-flag command reaches the green `verified` state without
+tripping a single endpoint's rate limit.
 
 ## Notes
-- Public Base RPCs (e.g. `mainnet.base.org`) are rate-limited; pass a reliable `--rpc` for the
-  green `verified` state, especially for agents with many anchors (Approach A iterates `getAnchor`).
+- Public Base RPCs (e.g. `mainnet.base.org`) are rate-limited and Approach A iterates `getAnchor`,
+  so any single endpoint is fragile. The Node tool auto-falls-back across several public RPCs, so
+  the zero-flag command normally reaches the green `verified` state on its own. Only if **every**
+  candidate is rate-limited at once does it return `onchain_unconfirmed` (the in-browser recompute
+  still holds) — pass your own `--rpc` to force a clean confirmation. The Python tool reads a single
+  tx (Approach B) and isn't affected by getAnchor iteration limits.
 - **Integer bound:** payload numbers must be within ±(2⁵³−1) (the I-JSON safe-integer range);
   `rfc8785` enforces this. No Yolo payload exceeds it, by design.
 

@@ -4,6 +4,11 @@
  * cross-language trust proof. On-chain read here is Approach A (getAnchor by seq-range) —
  * distinct from the Python tool's Approach B (read the anchoring tx). Two methods, same root.
  *
+ * RPC resilience: the on-chain read tries your --rpc (if given) first, then falls back through a
+ * curated list of public Base RPCs on rate-limit/transport errors. The zero-flag command verifies
+ * clean without you supplying an endpoint; ONCHAIN_UNCONFIRMED is returned ONLY when every
+ * candidate genuinely fails — a confirmation is never faked.
+ *
  * Run: npm install && npx tsx yolo-verify.ts <audit_id> [--source URL] [--rpc URL] [--bundle file] [--json]
  */
 import * as fs from "fs";
@@ -16,6 +21,19 @@ import {
 } from "./verify-client";
 
 const PUBLISHED_ANCHOR = "0xDf5e1c1e82880C0E9dce3758A58e62189Ca365FD";
+
+// Curated public Base RPCs, ordered by observed reliability for iterating getAnchor (Approach A).
+// publicnode first (handles the iteration without tripping rate limits); mainnet.base.org last as
+// the canonical fallback. A --rpc / NEXT_PUBLIC_BASE_RPC_URL value is prepended and tried first.
+const PUBLIC_BASE_RPCS = [
+  "https://base-rpc.publicnode.com",
+  "https://base.llamarpc.com",
+  "https://base.drpc.org",
+  "https://1rpc.io/base",
+  "https://mainnet.base.org",
+];
+
+const hostOf = (u: string): string => { try { return new URL(u).host; } catch { return u; } };
 const EXIT: Record<VerificationView["state"], number> = {
   verified: 0, pending_anchor: 2, anchored_payload_anomaly: 3,
   onchain_unconfirmed: 4, anchor_root_mismatch: 5, payload_hash_mismatch: 6,
@@ -28,10 +46,12 @@ const flag = (name: string): string | undefined => {
 };
 
 async function main() {
-  // RPC precedence: --rpc > NEXT_PUBLIC_BASE_RPC_URL > public default (mainnet.base.org).
-  // Public RPCs are rate-limited; pass --rpc for reliability (Approach A iterates getAnchor).
-  const rpc = flag("--rpc");
-  if (rpc) process.env.NEXT_PUBLIC_BASE_RPC_URL = rpc;
+  // RPC candidates: a --rpc / NEXT_PUBLIC_BASE_RPC_URL value (if given) is tried FIRST, then the
+  // curated public fallbacks (deduped, order preserved). Public endpoints rate-limit Approach A's
+  // getAnchor iteration, so a single endpoint is fragile — the fallback makes the zero-flag path
+  // verify clean while staying honest (ONCHAIN_UNCONFIRMED only when EVERY candidate fails).
+  const rpcOverride = flag("--rpc") ?? process.env.NEXT_PUBLIC_BASE_RPC_URL;
+  const rpcCandidates = [...new Set([rpcOverride, ...PUBLIC_BASE_RPCS].filter(Boolean) as string[])];
   if (!process.env.NEXT_PUBLIC_AUDIT_ANCHOR_ADDRESS) process.env.NEXT_PUBLIC_AUDIT_ANCHOR_ADDRESS = PUBLISHED_ANCHOR;
 
   const source = flag("--source") ?? "https://yolo.solutions";
@@ -50,22 +70,38 @@ async function main() {
     console.error("usage: yolo-verify.ts <audit_id> | --bundle file.json"); process.exit(1); return;
   }
 
+  // Read the anchored root, falling back through the candidate RPCs on transport/rate-limit errors.
+  // A reachable RPC returning a definitive answer (a root OR a genuine null) stops the loop — chain
+  // state is global, so another RPC would not change it. Only transport failures fall through; if
+  // they all fail, onChainRoot stays null and the verdict is the honest ONCHAIN_UNCONFIRMED.
   let onChainRoot: string | null = null;
+  let rpcUsed: string | undefined;
+  const rpcErrors: string[] = [];
   if (bundle.anchored && bundle.anchor) {
-    try {
-      onChainRoot = await readOnChainRoot(bundle.entry.agent_id, bundle.anchor.batch.first_seq, bundle.anchor.batch.last_seq);
-    } catch { onChainRoot = null; }
+    for (const candidate of rpcCandidates) {
+      process.env.NEXT_PUBLIC_BASE_RPC_URL = candidate;
+      try {
+        onChainRoot = await readOnChainRoot(bundle.entry.agent_id, bundle.anchor.batch.first_seq, bundle.anchor.batch.last_seq);
+        rpcUsed = candidate;
+        break;
+      } catch (e) {
+        rpcErrors.push(`${hostOf(candidate)} — ${e instanceof Error ? e.message.split("\n")[0] : String(e)}`);
+      }
+    }
   }
   const view = await recomputeAndAssess(bundle, onChainRoot);
 
   if (asJson) {
-    console.log(JSON.stringify({ id: bundle.entry.id, verdict: view.state, verified: view.verified, checks: view.checks }, null, 2));
+    console.log(JSON.stringify({ id: bundle.entry.id, verdict: view.state, verified: view.verified, rpc: rpcUsed ?? null, checks: view.checks }, null, 2));
     process.exit(EXIT[view.state]);
   }
 
-  const host = (() => { try { return new URL(process.env.NEXT_PUBLIC_BASE_RPC_URL!).host; } catch { return "(default)"; } })();
+  const rpcLabel = rpcUsed
+    ? `${hostOf(rpcUsed)}${rpcErrors.length ? ` (fell back past ${rpcErrors.length})` : ""}`
+    : !bundle.anchored ? "(not queried — entry not anchored)"
+    : `(all ${rpcCandidates.length} candidates unreachable)`;
   console.log(`\nYolo audit verifier (Node/verify-client) — entry #${bundle.entry.id}`);
-  console.log(`RPC: ${host}\n`);
+  console.log(`RPC: ${rpcLabel}\n`);
   for (const c of view.checks) {
     const mark = c.result === "pass" ? "PASS" : c.result === "fail" ? "FAIL" : " -- ";
     console.log(`  [${mark}] ${c.label}${c.detail ? `  (${c.detail})` : ""}`);
@@ -73,6 +109,11 @@ async function main() {
   if (view.serverClassification) console.log(`\n  operator classification: ${view.serverClassification}`);
   console.log(`\nVERDICT: ${view.state.toUpperCase()} ${view.verified ? "✓" : ""}`);
   console.log(`  ${view.headline}`);
+  if (view.state === "onchain_unconfirmed" && rpcErrors.length) {
+    console.log(`\n  every Base RPC was unreachable — tried:`);
+    for (const e of rpcErrors) console.log(`    · ${e}`);
+    console.log(`  retry later or pass a reliable --rpc; the in-browser recompute above still holds.`);
+  }
   process.exit(EXIT[view.state]);
 }
 
