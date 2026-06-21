@@ -34,10 +34,14 @@ export type ProofBundle = {
 export type ClientCheck = { label: string; result: "pass" | "fail" | "skip"; detail?: string };
 
 export type VerificationView = {
-  state: "verified" | "pending_anchor" | "anchor_root_mismatch" | "anchored_payload_anomaly" | "payload_hash_mismatch" | "onchain_unconfirmed" | "reference_seed";
+  state: "verified" | "pending_anchor" | "anchor_root_mismatch" | "anchored_payload_anomaly" | "payload_hash_mismatch" | "rpc_unreachable" | "anchor_absent" | "reference_seed";
   verified: boolean;  // true ONLY when fully sound — the green state
   tone: "ok" | "warn" | "bad" | "neutral";
   headline: string;
+  // Attestation scope — what the verdict actually bound. Never a bare "verified" with no scope:
+  //   "full payload bound" (v2) | "top-level only — nested keys not bound" (v1) |
+  //   "Merkle-membership only — payload not re-hashed" (reference/seed).
+  scope: string;
   note: string;
   checks: ClientCheck[];
   serverClassification?: string; // server's payload_hash.reason, shown as context (never as the verdict)
@@ -120,26 +124,78 @@ export async function readOnChainRoot(agentId: string, firstSeq: number, lastSeq
   return null;
 }
 
+// ── Reference/seed allowlist (verifier self-enforced) ───────────────────────────
+//
+// Frozen mirror of the REFERENCE_SEED_ENTRIES ids in lib/audit-proof.ts. The Merkle-membership-only
+// skip (no payload re-hash) is granted ONLY when the server bundle classifies an entry reference_seed
+// AND its id is on THIS list — so a server cannot grant the payload-skip for an arbitrary id. Kept in
+// lockstep with lib/audit-proof.ts and verifier/reference-seed-allowlist.json by
+// test/verifier-reference-seed-sync.test.ts.
+export const REFERENCE_SEED_IDS = new Set<number>([
+  2, 3, 4, 5, 6, 9, 10, 11, 14, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+]);
+
+// ── Last-known-anchor checkpoints (zero-dependency floor, per agent) ────────────
+//
+// One committed checkpoint per agent: that agent's highest confirmed on-chain anchor, taken from the
+// immutable anchorBatch tx's own calldata (agentId/root/lastSeq), cross-checked against the anchor
+// record, with tx.to = YoloAuditAnchor and receipt status = success. Real, independently-verifiable
+// (decode each tx on Basescan) — so "anchor absent" can be told apart from "RPC unreachable" WITHOUT
+// trusting any single RPC. When a REACHABLE RPC reports no matching anchor for an entry whose agent has
+// a checkpoint here and whose seq is at/below that checkpoint's lastSeq, the absence is corroborated
+// (the contract demonstrably anchored that agent past it) — a HARD anchor_absent, not RPC lag. Mirror
+// of verifier/last-known-anchor.json (`checkpoints`), tied by test/verifier-reference-seed-sync.test.ts.
+export type AnchorCheckpoint = { agentId: string; anchorIndex: number; lastSeq: number; block: number; root: string; tx: string };
+export const LAST_KNOWN_ANCHORS: ReadonlyArray<AnchorCheckpoint> = [
+  { agentId: "48e7d993-5534-4f01-ad03-fbcdb4b8afd2", anchorIndex: 0,  lastSeq: 0,  block: 46016574, root: "7bfd8da730d693bff67dc36f97c173ba3a523f0eba9dedc3dea28ad5077d3332", tx: "0x7b99ee4d1159ba45d252a489e5ec705511263bf936ee085c450f325bf044479a" },
+  { agentId: "4fbe49c2-89f5-44e4-a995-89115f767217", anchorIndex: 22, lastSeq: 51, block: 47523729, root: "e61f3317e2628bcf5448a92dc65b251fdea42e232b71b23be177f25b81acae82", tx: "0x9a5e17bff77aef2483c79c1c383169bb200a990a18a080c79a603eb3c8b8d099" },
+  { agentId: "62181681-4007-4252-9b9c-7e537fa0e785", anchorIndex: 0,  lastSeq: 0,  block: 46016579, root: "ffb31ce73f4ef3f3341000c79d8eb4cb3afb32105650cf049c3703f7975fd799", tx: "0xe8b0ffb73698555de219dfc18af277c59c240e398b9971b51f2dd15b48583b1f" },
+  { agentId: "78dfb9a0-35c8-49d3-8ea3-127bb359260f", anchorIndex: 0,  lastSeq: 0,  block: 46016582, root: "d2ef81e884532729bb8a2cd5aeab9cda217186247292465e8f5835c3596788dd", tx: "0x345912d33cd5982cc97e3a3b4cb55a2cf5d1aede2a9c1cd48c78e20f30178f12" },
+  { agentId: "9251890e-3a04-4082-bfff-59170cc59da1", anchorIndex: 0,  lastSeq: 0,  block: 46016584, root: "10622df66014dedf64c5d22217567eb64eec1ab257e2a364fd6f3c1d4d64f519", tx: "0x7235559d48e0aaf2714089dbe9f25e84872296c5d405043e21324d9a722f45cf" },
+  { agentId: "c8bf3f0e-8b63-400a-b1cf-c3144c6a04a3", anchorIndex: 0,  lastSeq: 1,  block: 46016587, root: "91a917fb1caeadbbdd897e56a268592734f21c6dedf28e96885061ac0d3d70b7", tx: "0xce63b5c5d04459bbb7945da431abdd24276f559ca6e62859b44226970862a694" },
+  { agentId: "d54d8310-96f3-446c-b141-08a0db7d7093", anchorIndex: 0,  lastSeq: 0,  block: 47512821, root: "2b5af082d9bdd2f184908d8f2de3db454ee9c72faa1b56813926e70dd258fe35", tx: "0x36b3df17d7b87ab1e294b4f54a9bb399230d3a2af51c8492ccf314d61d76a3f3" },
+];
+
+// Returns the committed checkpoint for an agent, or undefined if none.
+export function checkpointFor(agentId: string): AnchorCheckpoint | undefined {
+  return LAST_KNOWN_ANCHORS.find((c) => c.agentId === agentId);
+}
+
 // ── Verdict ─────────────────────────────────────────────────────────────────────
 //
 // PURE given (bundle, onChainRoot). onChainRoot: 64-hex string if read from Base, or null
 // if the entry isn't anchored OR the Base read was unavailable (distinguished by anchored).
 
-export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: string | null): Promise<VerificationView> {
+// onChainReachable distinguishes the two null-root causes: false = no RPC answered (transport
+// failure, "unreachable"); true = a reachable RPC gave a definitive answer but no matching anchor was
+// found ("absent"). The read layer (browser/Node/Python) sets it; the verdict logic stays pure.
+export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: string | null, onChainReachable = false): Promise<VerificationView> {
   const canon = (bundle.entry.canon_version ?? "v1") as "v1" | "v2";
   // Reference/seed entries may have their readable payload WITHHELD (`_redacted`). When withheld
   // there is nothing to recompute: payload + chain-hash checks are SKIPPED (null) and the entry is
   // confirmed by Merkle membership alone. Non-redacted entries get the full unchanged recompute.
-  const redacted  = (bundle.entry.payload as { _redacted?: unknown })?._redacted === true;
-  const isRefSeed = bundle.classification?.kind === "reference_seed";
+  // Self-enforced: the server SAYING reference_seed is necessary but NOT sufficient — the id must also
+  // be on the verifier's own frozen allowlist. A non-allowlisted id claiming reference_seed is verified
+  // as a NORMAL entry (payload re-hashed); the membership-only skip is never granted on server say-so.
+  const localRefSeed = REFERENCE_SEED_IDS.has(bundle.entry.id);
+  const isRefSeed = bundle.classification?.kind === "reference_seed" && localRefSeed;
+  // The withheld-payload skip is honored ONLY for an allowlisted id. If the server withheld the payload
+  // for a non-allowlisted id, do NOT skip: the redaction marker won't re-hash → payload_hash_mismatch.
+  const redacted  = ((bundle.entry.payload as { _redacted?: unknown })?._redacted === true) && localRefSeed;
   const serverClassification = bundle.classification?.reason ?? bundle.checks?.payload_hash?.reason;
+
+  // Attestation scope — derived from canon_version + reference/seed, surfaced in EVERY verdict so an
+  // auditor sees how much was actually bound. v1 binds only top-level keys (nested keys collapse), v2
+  // binds the full payload, reference/seed is membership-only (payload not re-hashed).
+  const canonScope = canon === "v2" ? "full payload bound" : "top-level only — nested keys not bound";
+  const scope = isRefSeed ? "Merkle-membership only — payload not re-hashed" : canonScope;
 
   const payloadOk = redacted ? null : (await recomputePayloadHash(bundle.entry.payload, canon)) === bundle.hashes.payload_hash;
   const chainOk   = redacted ? null : (await recomputeChainHash(bundle.entry.agent_id, bundle.entry.seq, bundle.entry.prev_hash, bundle.hashes.payload_hash)) === bundle.hashes.chain_hash;
 
   const payloadCheck: ClientCheck = redacted
-    ? { label: "Payload re-hashes to its payload_hash", result: "skip", detail: "payload withheld (reference/seed)" }
-    : { label: "Payload re-hashes to its payload_hash", result: payloadOk ? "pass" : "fail" };
+    ? { label: "Payload re-hashes to its payload_hash", result: "skip", detail: "payload withheld (reference/seed) — membership only" }
+    : { label: "Payload re-hashes to its payload_hash", result: payloadOk ? "pass" : "fail", detail: payloadOk ? canonScope : undefined };
   const chainCheck: ClientCheck = redacted
     ? { label: "Chain hash binds the payload to this entry", result: "skip", detail: "payload withheld (reference/seed)" }
     : { label: "Chain hash binds the payload to this entry", result: chainOk ? "pass" : "fail" };
@@ -148,6 +204,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   if (!bundle.anchored || !bundle.anchor || !bundle.merkle_proof) {
     return {
       state: "pending_anchor",
+      scope,
       verified: false,
       tone: "neutral",
       headline: "Recorded — not yet anchored on-chain",
@@ -178,7 +235,9 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     {
       label: "Recomputed root matches the root anchored on Base",
       result: onChainOk === null ? "skip" : onChainOk ? "pass" : "fail",
-      detail: onChainOk === null ? "could not reach a Base RPC" : onChainOk ? undefined : "recomputed root is NOT the one anchored on Base",
+      detail: onChainOk === null
+        ? (onChainReachable ? "no matching anchor found on Base for this seq range" : "could not reach a Base RPC")
+        : onChainOk ? undefined : "recomputed root is NOT the one anchored on Base",
     },
   ];
 
@@ -188,6 +247,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   if (!merkleMatchesApi || onChainOk === false) {
     return {
       state: "anchor_root_mismatch",
+      scope,
       verified: false,
       tone: "bad",
       headline: "Anchor proof INVALID — do not trust",
@@ -205,13 +265,14 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     const known = bundle.checks?.payload_hash?.status === "known_legacy_anomaly";
     return {
       state: known ? "anchored_payload_anomaly" : "payload_hash_mismatch",
+      scope,
       verified: false,
       tone: known ? "warn" : "bad",
       headline: known
         ? "Anchored, but payload integrity NOT confirmed (documented legacy anomaly)"
         : "INTEGRITY FAILURE — payload does not match its hash",
       note: known
-        ? "Your browser confirmed this entry's chain hash is anchored on Base, but the stored payload does NOT re-hash to its recorded payload_hash. The operator classifies this as a documented legacy anomaly (BUG-SEQ0) — NOT tampering — but it cannot be shown as fully verified."
+        ? "Your browser confirmed this entry's chain hash is anchored on Base, but the stored payload does NOT re-hash to its recorded payload_hash. The operator classifies this as a documented legacy anomaly — NOT tampering — but it cannot be shown as fully verified."
         : "Your browser confirmed the Merkle anchor, but the stored payload does NOT re-hash to its recorded payload_hash and this is not a known legacy anomaly. Treat as a potential integrity issue.",
       checks,
       serverClassification,
@@ -224,6 +285,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     const onChainConfirmed = onChainOk === true;
     return {
       state: "reference_seed",
+      scope,
       verified: false,
       tone: "neutral",
       headline: "REFERENCE / SEED ENTRY — not a production decision",
@@ -234,21 +296,47 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
         (onChainConfirmed
           ? "Your browser confirmed its chain hash is anchored on Base mainnet — Merkle membership verified" +
             (redacted ? "; the payload-hash recompute is skipped because the payload is withheld." : ".")
-          : "The Merkle proof reconciles to the bundle's root, but a Base RPC was unreachable to confirm it on-chain — retry, or open the tx on Basescan.") +
+          : (onChainReachable
+            ? "The Merkle proof reconciles to the bundle's root, but a reachable Base RPC found no matching anchor on-chain for this seq range."
+            : "The Merkle proof reconciles to the bundle's root, but no Base RPC was reachable to confirm it on-chain — retry, or open the tx on Basescan.")) +
         " It is labeled reference/seed so it is never mistaken for a production record.",
       checks,
       serverClassification,
     };
   }
 
-  // (3) All in-browser checks pass but Base was unreachable — cannot claim "verified".
+  // (3) All in-browser checks pass but the anchored root could not be CONFIRMED on Base. Split the two
+  // genuinely different causes — never collapse "couldn't look" with "looked, nothing there":
   if (onChainOk === null) {
+    // (3a) rpc_unreachable — every RPC transport failed. A connectivity problem, NOT evidence of absence.
+    if (!onChainReachable) {
+      return {
+        state: "rpc_unreachable",
+        scope,
+        verified: false,
+        tone: "warn",
+        headline: "Recomputed in your browser ✓ — Base RPC unreachable",
+        note: "Your browser independently recomputed the payload hash, chain hash, and Merkle root, and they all match the proof. No Base RPC was reachable to confirm the root on-chain — this is a connectivity problem, NOT evidence the anchor is missing. Retry, or pass a reliable RPC.",
+        checks,
+      };
+    }
+    // (3b) anchor_absent — a REACHABLE RPC returned no matching anchor for this seq range. The claimed
+    // anchor is not on Base. Hardened by THIS agent's committed checkpoint when the entry's seq is
+    // at/below it (so the absence cannot be RPC lag behind a known anchored head). An agent with no
+    // checkpoint falls back to the honest single-RPC label.
+    const floor = checkpointFor(bundle.entry.agent_id);
+    const floorHard = floor !== undefined && bundle.anchor.batch.last_seq <= floor.lastSeq;
     return {
-      state: "onchain_unconfirmed",
+      state: "anchor_absent",
+      scope,
       verified: false,
-      tone: "warn",
-      headline: "Recomputed in your browser ✓ — Base confirmation unavailable",
-      note: "Your browser independently recomputed the payload hash, chain hash, and Merkle root, and they all match the proof. It could not reach a Base RPC to confirm the root is the one anchored on-chain — retry, or open the transaction on Basescan.",
+      tone: "bad",
+      headline: "NO ANCHOR ON BASE — the claimed anchor is not on-chain",
+      note:
+        "Your browser recomputed the payload hash, chain hash, and Merkle root from the bundle, but a reachable Base RPC returned NO matching anchor for this entry's seq range. The proof claims an anchor that is not on Base mainnet — do not treat this entry as anchored." +
+        (floorHard
+          ? ` Corroborated by this agent's committed last-known-anchor checkpoint (${floor!.agentId.slice(0, 8)}… anchored through seq ${floor!.lastSeq} at block ${floor!.block}), so this absence is not RPC lag behind a known anchored head.`
+          : " (Confirmed against a single reachable RPC; not covered by the committed checkpoint floor.)"),
       checks,
     };
   }
@@ -256,9 +344,10 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   // (4) Fully sound production entry: payload binds, Merkle reconciles, root is the one on Base.
   return {
     state: "verified",
+    scope,
     verified: true,
     tone: "ok",
-    headline: "VERIFIED — independently recomputed in your browser",
+    headline: `VERIFIED — ${scope} — independently recomputed in your browser`,
     note: "Your browser recomputed the payload hash, the chain hash, and the Merkle root from the proof bundle, and confirmed that root is the one anchored on Base mainnet. This required no trust in Yolo's servers.",
     checks,
   };

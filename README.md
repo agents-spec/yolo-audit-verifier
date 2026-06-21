@@ -19,7 +19,7 @@ You do **not** rely on Yolo's servers to compute anything: both tools recompute 
 4. **root anchored on Base** — read the anchored root from Base; `== recomputed root`.
 5. **payload-integrity classification** — the operator's anomaly/tampering label, echoed as *their* claim.
 
-Verdicts: `verified | pending_anchor | anchor_root_mismatch | anchored_payload_anomaly | payload_hash_mismatch | onchain_unconfirmed`. Exit codes: `0 / 2 / 5 / 3 / 6 / 4` (1 = error).
+Verdicts: `verified | pending_anchor | anchor_root_mismatch | anchored_payload_anomaly | payload_hash_mismatch | reference_seed | rpc_unreachable | anchor_absent | anchor_mismatch`. Exit codes: `0 / 2 / 5 / 3 / 6 / 7 / 4 / 8 / 9` (1 = error). `rpc_unreachable` (no RPC answered) and `anchor_absent` (a reachable RPC found no matching anchor) are kept distinct — only the latter is evidence the anchor is missing; a committed last-known-anchor floor (`last-known-anchor.json`) hardens it, and an optional Basescan key (`--basescan`/`BASESCAN_API_KEY`) adds a non-RPC cross-check.
 
 ## Canonicalization (the subtle part)
 `payload_hash` is SHA-256 over a **canonical** serialization:
@@ -52,7 +52,7 @@ tripping a single endpoint's rate limit.
 - Public Base RPCs (e.g. `mainnet.base.org`) are rate-limited and Approach A iterates `getAnchor`,
   so any single endpoint is fragile. The Node tool auto-falls-back across several public RPCs, so
   the zero-flag command normally reaches the green `verified` state on its own. Only if **every**
-  candidate is rate-limited at once does it return `onchain_unconfirmed` (the in-browser recompute
+  candidate is rate-limited at once does it return `rpc_unreachable` (the in-browser recompute
   still holds) — pass your own `--rpc` to force a clean confirmation. The Python tool reads a single
   tx (Approach B) and isn't affected by getAnchor iteration limits.
 - **Integer bound:** payload numbers must be within ±(2⁵³−1) (the I-JSON safe-integer range);

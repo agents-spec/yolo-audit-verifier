@@ -1,0 +1,61 @@
+{
+  "_comment": "Zero-dependency absence floor: one committed checkpoint per agent — the highest confirmed on-chain anchor for that agent. Each is the immutable anchorBatch tx's own calldata (agentId, merkleRoot, lastSeq) cross-checked against the agent_audit_anchors record, with tx.to = YoloAuditAnchor 0xDf5e1c1e82880C0E9dce3758A58e62189Ca365FD and receipt status = success; block is the tx's mined block. Anyone can re-derive these by decoding each tx on Basescan (decodeFunctionData anchorBatch). Use: when a REACHABLE RPC reports no matching anchor for an entry whose agentId has a checkpoint here and whose seq is at/below that checkpoint's lastSeq, the absence is corroborated (the contract demonstrably anchored that agent past that point) — a hard anchor_absent, not RPC lag. Agents with no checkpoint fall back to the honest single-RPC label. Mirror of LAST_KNOWN_ANCHORS in lib/verify-client.ts, tied by test/verifier-reference-seed-sync.test.ts. NOTE: agent acce0541-0336-4a5c-a3ed-55dbfd59f1dd has anchor records but none with an on-chain tx_hash (its anchor row is the known corrupt merkle_root='ch'), so it is intentionally NOT checkpointed.",
+  "checkpoints": [
+    {
+      "agentId": "48e7d993-5534-4f01-ad03-fbcdb4b8afd2",
+      "anchorIndex": 0,
+      "lastSeq": 0,
+      "block": 46016574,
+      "root": "7bfd8da730d693bff67dc36f97c173ba3a523f0eba9dedc3dea28ad5077d3332",
+      "tx": "0x7b99ee4d1159ba45d252a489e5ec705511263bf936ee085c450f325bf044479a"
+    },
+    {
+      "agentId": "4fbe49c2-89f5-44e4-a995-89115f767217",
+      "anchorIndex": 22,
+      "lastSeq": 51,
+      "block": 47523729,
+      "root": "e61f3317e2628bcf5448a92dc65b251fdea42e232b71b23be177f25b81acae82",
+      "tx": "0x9a5e17bff77aef2483c79c1c383169bb200a990a18a080c79a603eb3c8b8d099"
+    },
+    {
+      "agentId": "62181681-4007-4252-9b9c-7e537fa0e785",
+      "anchorIndex": 0,
+      "lastSeq": 0,
+      "block": 46016579,
+      "root": "ffb31ce73f4ef3f3341000c79d8eb4cb3afb32105650cf049c3703f7975fd799",
+      "tx": "0xe8b0ffb73698555de219dfc18af277c59c240e398b9971b51f2dd15b48583b1f"
+    },
+    {
+      "agentId": "78dfb9a0-35c8-49d3-8ea3-127bb359260f",
+      "anchorIndex": 0,
+      "lastSeq": 0,
+      "block": 46016582,
+      "root": "d2ef81e884532729bb8a2cd5aeab9cda217186247292465e8f5835c3596788dd",
+      "tx": "0x345912d33cd5982cc97e3a3b4cb55a2cf5d1aede2a9c1cd48c78e20f30178f12"
+    },
+    {
+      "agentId": "9251890e-3a04-4082-bfff-59170cc59da1",
+      "anchorIndex": 0,
+      "lastSeq": 0,
+      "block": 46016584,
+      "root": "10622df66014dedf64c5d22217567eb64eec1ab257e2a364fd6f3c1d4d64f519",
+      "tx": "0x7235559d48e0aaf2714089dbe9f25e84872296c5d405043e21324d9a722f45cf"
+    },
+    {
+      "agentId": "c8bf3f0e-8b63-400a-b1cf-c3144c6a04a3",
+      "anchorIndex": 0,
+      "lastSeq": 1,
+      "block": 46016587,
+      "root": "91a917fb1caeadbbdd897e56a268592734f21c6dedf28e96885061ac0d3d70b7",
+      "tx": "0xce63b5c5d04459bbb7945da431abdd24276f559ca6e62859b44226970862a694"
+    },
+    {
+      "agentId": "d54d8310-96f3-446c-b141-08a0db7d7093",
+      "anchorIndex": 0,
+      "lastSeq": 0,
+      "block": 47512821,
+      "root": "2b5af082d9bdd2f184908d8f2de3db454ee9c72faa1b56813926e70dd258fe35",
+      "tx": "0x36b3df17d7b87ab1e294b4f54a9bb399230d3a2af51c8492ccf314d61d76a3f3"
+    }
+  ]
+}

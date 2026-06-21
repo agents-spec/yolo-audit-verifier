@@ -1,0 +1,4 @@
+{
+  "_comment": "Frozen mirror of the REFERENCE_SEED_ENTRIES ids in lib/audit-proof.ts (the server-side source of truth). The verifier grants the Merkle-membership-only skip (no payload re-hash) ONLY for an id that is BOTH on this list AND classified reference_seed by the proof bundle the server returns. If the server claims reference_seed for an id that is NOT here, the verifier ignores the claim, re-hashes the payload like any normal entry, and reports payload_hash_mismatch on failure. Kept in lockstep with lib/audit-proof.ts and the inlined REFERENCE_SEED_IDS in verify-client.ts by test/verifier-reference-seed-sync.test.ts. Adding an id is a reviewed change in all three places — never a server-only assertion.",
+  "ids": [2, 3, 4, 5, 6, 9, 10, 11, 14, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+}
