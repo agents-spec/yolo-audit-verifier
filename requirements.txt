@@ -3,3 +3,6 @@
 # v2 payload_hash recompute. Do NOT substitute json.dumps(sort_keys=True): it is NOT
 # JCS-conformant (sorts by Unicode code point, not UTF-16 code unit; wrong number formatting).
 rfc8785==0.1.4
+# eth-account: EIP-191 (personal_sign) signature recovery for the settlement_receipt attestation
+# (rail-verify.py) — must recover the SAME address as the TS verifier's viem recoverMessageAddress.
+eth-account==0.13.7

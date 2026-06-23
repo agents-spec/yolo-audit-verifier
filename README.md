@@ -48,6 +48,62 @@ first, then **automatically falls back** through a curated list of public Base R
 rate-limit/transport error — so the zero-flag command reaches the green `verified` state without
 tripping a single endpoint's rate limit.
 
+## Rail-agnostic settlement verification (`rail-verify.ts` / `rail-verify.py`)
+
+Beyond the Base-anchor tamper-evidence check above, the verifier can independently confirm a
+`settlement_receipt` entry's *declared settlement* against the **foreign rail's own ledger** —
+**EVM (`eip155:*`), XRPL, and Solana** — over **raw public RPC, no chain SDKs**, with **byte-for-byte
+TS↔Python parity**. This is additive and **orthogonal** to the anchor verdict: an entry still gets
+the five-step tamper-evidence check first; the rail check is a separate, second confirmation.
+
+**Verdicts** (independent of the anchor verdict):
+`rail_settlement_confirmed | rail_settlement_mismatch | rail_settlement_absent | rail_unreachable | rail_unsupported`,
+plus the receipt's signature check: `attestation_valid | attestation_invalid` (the agent's home
+`self_wallet` must EIP-191-sign the receipt).
+
+**What it proves.** The declared transaction exists and settled on the named rail, and each split
+leg's **amount → destination** matches the actual on-chain transfers (asset included). For an EVM
+`chain_enforced` receipt it additionally confirms the inviolable **1%** from the transaction itself —
+the agent leg's `ceil(1%)` to the home `self_wallet` is an on-chain transfer in the proof tx, not
+merely asserted (`protocolEnforced1pct = true`).
+
+### What it does NOT claim (read this)
+- **Off-ledger rails are proven-and-audited, NOT protocol-enforced.** On XRPL / non-programmable rails
+  the split is separate native payments, so the 1% is *verified to have occurred*, not *enforced by a
+  contract*. `protocolEnforced1pct` is **true only** for a confirmed **EVM `chain_enforced`** receipt;
+  it is **false** for every off-ledger confirmation, even a fully matched one.
+- **Tamper-evident, NOT omission-evident.** A confirmed receipt proves *this* settlement is real and
+  unaltered; it **cannot** prove the agent had no other, unsealed settlements.
+- **Declared legs only.** It confirms the legs the receipt declares; it does **not** assert that no
+  transfers occurred outside them.
+
+### Exactness
+- **Integer base-units only** — amounts are matched as exact integers (XRPL IOU decimal values are
+  exact-scaled by the asset's `decimals`; a value that does not scale cleanly is a `mismatch`, never a
+  pass). No floating point anywhere.
+- **Rail-aware address casing** — EVM addresses compare case-insensitively (hex); XRPL r-addresses and
+  Solana base58 compare **case-sensitively** (exact), so two distinct non-EVM addresses cannot collide.
+- **Solana matching uses `postTokenBalances.owner`** (the wallet, not the token account/ATA) with an
+  **ambiguity guard**: if two legs share one `(owner, mint)` the net delta can't be attributed per leg,
+  so the verdict is `mismatch` — never a false confirm. XRPL confirms each leg's own `tx_hash` +
+  `ledger_index`, using `meta.delivered_amount` (not the requested `Amount`).
+
+### Verify it yourself (offline, static fixtures)
+Self-contained demos — no network, no monorepo, runnable from a clone. They cover: EVM
+confirmed-and-1%-enforced, XRPL off-ledger confirmed-but-NOT-enforced (the honesty case),
+wrong-issuer and Solana ATA-not-owner mismatches, and an unsupported rail.
+```sh
+# Node (deps: tsx + viem)
+npm install
+node --import tsx --test test/rail-verify.public.test.ts
+
+# Python (deps: rfc8785 + eth-account)
+python3 -m pip install -r requirements.txt
+python3 test/rail_verify_public_test.py
+```
+The same fixtures producing the same verdicts in both languages is the cross-language trust proof,
+exactly as for the anchor verifier above.
+
 ## Notes
 - Public Base RPCs (e.g. `mainnet.base.org`) are rate-limited and Approach A iterates `getAnchor`,
   so any single endpoint is fragile. The Node tool auto-falls-back across several public RPCs, so

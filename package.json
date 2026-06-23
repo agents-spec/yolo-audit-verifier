@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "verify": "tsx yolo-verify.ts",
-    "test": "node --import tsx --test test/rejection.test.ts"
+    "test": "node --import tsx --test test/rejection.test.ts test/rail-verify.public.test.ts"
   },
   "dependencies": {
     "viem": "^2.48.7"

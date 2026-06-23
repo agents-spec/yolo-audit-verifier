@@ -1,0 +1,569 @@
+[
+  {
+    "name": "a_evm_chain_enforced_confirmed",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:8453",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0x7aa48580bf806e2dac3f4a985306eacedae935370eaf00bdf12c3f2d8b7640473935ded2458e82f115b3cdbfb0127221d3b7e47a4002a8372d477d4980a3d95f1b",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": true
+    }
+  },
+  {
+    "name": "b_xrpl_off_ledger_confirmed_not_enforced",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "xrpl:0",
+      "asset": {
+        "symbol": "RLUSD",
+        "rail_address": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+        "decimals": 15
+      },
+      "amount": "100000000000000000",
+      "counterparty": "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe",
+      "proof": {
+        "kind": "xrpl_tx",
+        "tx_hash": "C8A1A7F3",
+        "ledger_index": 94512233
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "rAgentSelfXRPL",
+            "amount": "1000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "C8A1A7F3",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "treasury",
+            "dest": "rTreasuryXRPL",
+            "amount": "2000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "D9B2B104",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "owner",
+            "dest": "rOwnerXRPL",
+            "amount": "97000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "E0C3C215",
+              "ledger_index": 94512234
+            }
+          }
+        ]
+      },
+      "enforcement": "attested_off_ledger",
+      "settled_at": "2026-06-21T18:31:05Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xbc90a929304428f6690964cc7e71ed9713985c406feeaa81a3e4353b04a119a75a1a37da2804f99bdb5ed70414f6321f2e6b7abe7a38a2f5c347121ba1ed74211c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "chain": "xrpl",
+      "legResults": [
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512233,
+            "Destination": "rAgentSelfXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+              "value": "1"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+                "value": "1"
+              }
+            }
+          }
+        },
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512233,
+            "Destination": "rTreasuryXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+              "value": "2"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+                "value": "2"
+              }
+            }
+          }
+        },
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512234,
+            "Destination": "rOwnerXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+              "value": "97"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+                "value": "97"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "c_xrpl_wrong_issuer_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "xrpl:0",
+      "asset": {
+        "symbol": "RLUSD",
+        "rail_address": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+        "decimals": 15
+      },
+      "amount": "100000000000000000",
+      "counterparty": "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe",
+      "proof": {
+        "kind": "xrpl_tx",
+        "tx_hash": "C8A1A7F3",
+        "ledger_index": 94512233
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "rAgentSelfXRPL",
+            "amount": "1000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "C8A1A7F3",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "treasury",
+            "dest": "rTreasuryXRPL",
+            "amount": "2000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "D9B2B104",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "owner",
+            "dest": "rOwnerXRPL",
+            "amount": "97000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "E0C3C215",
+              "ledger_index": 94512234
+            }
+          }
+        ]
+      },
+      "enforcement": "attested_off_ledger",
+      "settled_at": "2026-06-21T18:31:05Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xbc90a929304428f6690964cc7e71ed9713985c406feeaa81a3e4353b04a119a75a1a37da2804f99bdb5ed70414f6321f2e6b7abe7a38a2f5c347121ba1ed74211c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "chain": "xrpl",
+      "legResults": [
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512233,
+            "Destination": "rAgentSelfXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rFAKEissuerXXXXXXXXXXXXXXXXXXXXXXX",
+              "value": "1"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rFAKEissuerXXXXXXXXXXXXXXXXXXXXXXX",
+                "value": "1"
+              }
+            }
+          }
+        },
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512233,
+            "Destination": "rTreasuryXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+              "value": "2"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+                "value": "2"
+              }
+            }
+          }
+        },
+        {
+          "reachable": true,
+          "tx": {
+            "validated": true,
+            "ledger_index": 94512234,
+            "Destination": "rOwnerXRPL",
+            "Amount": {
+              "currency": "524C555344000000000000000000000000000000",
+              "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+              "value": "97"
+            },
+            "meta": {
+              "TransactionResult": "tesSUCCESS",
+              "delivered_amount": {
+                "currency": "524C555344000000000000000000000000000000",
+                "issuer": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+                "value": "97"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_mismatch",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "d_solana_ata_not_owner_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+      "proof": {
+        "kind": "solana_tx",
+        "signature": "5xY9cq2mF",
+        "slot": 287654321
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "AgentATA",
+            "amount": "10000",
+            "proof": {
+              "kind": "solana_tx",
+              "signature": "5xY9cq2mF",
+              "slot": 287654321
+            }
+          },
+          {
+            "role": "treasury",
+            "dest": "TreasuryWallet",
+            "amount": "20000",
+            "proof": {
+              "kind": "solana_tx",
+              "signature": "5xY9cq2mF",
+              "slot": 287654321
+            }
+          },
+          {
+            "role": "owner",
+            "dest": "OwnerWallet",
+            "amount": "970000",
+            "proof": {
+              "kind": "solana_tx",
+              "signature": "5xY9cq2mF",
+              "slot": 287654321
+            }
+          }
+        ]
+      },
+      "enforcement": "attested_off_ledger",
+      "settled_at": "2026-06-21T18:32:40Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xbe5c44d7bedd85e67dfe0123dd6747f2c221d62ae58ac1d2d3fec9eaf6981a17387a24db40d93d67eb14a233c4a218296b812f67854f749bf731f98b5a7426f61b",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "chain": "solana",
+      "getTx": {
+        "reachable": true,
+        "tx": {
+          "meta": {
+            "err": null,
+            "preTokenBalances": [],
+            "postTokenBalances": [
+              {
+                "accountIndex": 0,
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "owner": "AgentWallet",
+                "uiTokenAmount": {
+                  "amount": "10000"
+                }
+              },
+              {
+                "accountIndex": 1,
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "owner": "TreasuryWallet",
+                "uiTokenAmount": {
+                  "amount": "20000"
+                }
+              },
+              {
+                "accountIndex": 2,
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "owner": "OwnerWallet",
+                "uiTokenAmount": {
+                  "amount": "970000"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_mismatch",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "e_unsupported_rail",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "xrpl:0",
+      "asset": {
+        "symbol": "RLUSD",
+        "rail_address": "rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+        "decimals": 15
+      },
+      "amount": "100000000000000000",
+      "counterparty": "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe",
+      "proof": {
+        "kind": "xrpl_tx",
+        "tx_hash": "C8A1A7F3",
+        "ledger_index": 94512233
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "rAgentSelfXRPL",
+            "amount": "1000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "C8A1A7F3",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "treasury",
+            "dest": "rTreasuryXRPL",
+            "amount": "2000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "D9B2B104",
+              "ledger_index": 94512233
+            }
+          },
+          {
+            "role": "owner",
+            "dest": "rOwnerXRPL",
+            "amount": "97000000000000000",
+            "proof": {
+              "kind": "xrpl_tx",
+              "tx_hash": "E0C3C215",
+              "ledger_index": 94512234
+            }
+          }
+        ]
+      },
+      "enforcement": "attested_off_ledger",
+      "settled_at": "2026-06-21T18:31:05Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xbc90a929304428f6690964cc7e71ed9713985c406feeaa81a3e4353b04a119a75a1a37da2804f99bdb5ed70414f6321f2e6b7abe7a38a2f5c347121ba1ed74211c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "unsupported",
+      "detail": "unknown rail family / not wired"
+    },
+    "expected": {
+      "railVerdict": "rail_unsupported",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  }
+]
