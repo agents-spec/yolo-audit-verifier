@@ -8,7 +8,7 @@
         "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
         "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       },
-      "rail": "eip155:8453",
+      "rail": "eip155:84532",
       "asset": {
         "symbol": "USDC",
         "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
@@ -35,12 +35,12 @@
           },
           {
             "role": "treasury",
-            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
             "amount": "20000"
           },
           {
             "role": "owner",
-            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
             "amount": "970000"
           }
         ]
@@ -50,7 +50,7 @@
       "attestation": {
         "scheme": "eip191",
         "signer_role": "agent_self_wallet",
-        "signature": "0x7aa48580bf806e2dac3f4a985306eacedae935370eaf00bdf12c3f2d8b7640473935ded2458e82f115b3cdbfb0127221d3b7e47a4002a8372d477d4980a3d95f1b",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
         "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
       }
     },
@@ -59,18 +59,26 @@
       "transfers": [
         {
           "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
           "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
           "amount": "10000"
         },
         {
           "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
           "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
           "amount": "20000"
         },
         {
           "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
           "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
           "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af"
         }
       ]
     },
@@ -78,6 +86,91 @@
       "railVerdict": "rail_settlement_confirmed",
       "attestation": "attestation_valid",
       "protocolEnforced1pct": true
+    }
+  },
+  {
+    "name": "f_evm_chain_enforced_unbound",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": []
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
     }
   },
   {

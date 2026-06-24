@@ -105,12 +105,22 @@ export function checkSplitConsistency(receipt: SettlementReceipt): { ok: boolean
 
 // ── per-rail reader (mirrors the existing viem on-chain reader; stubs un-wired rails) ────────────
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"; // keccak256("Transfer(address,address,uint256)")
-export type RailTransfer = { token: string; to: string; amount: string }; // lowercased; amount in base-units
+// keccak256("SettlementRouted(uint256,uint256,uint256,uint256,uint256,address,address,address)") — the event
+// Block D's SettlementSplit emits on EVERY on-chain split. Its presence (from the pinned address) is the
+// contract asserting "I routed this split"; it is what makes chain_enforced more than a forgeable string.
+const SETTLEMENT_ROUTED_TOPIC = "0xa339757253da7d5a07fa887dad737e505a084a8c182b5bffa32cc551fa355070";
+// Pinned, audited SettlementSplit deployments per EVM rail (lowercased). The verifier CARRIES these (like
+// the allowlist) and NEVER trusts a contract address from the receipt. A rail with no pinned deployment
+// CANNOT have a chain_enforced claim confirmed → protocolEnforced1pct=false (e.g. Base mainnet until deployed).
+const SETTLEMENT_SPLIT: Record<string, string> = {
+  "eip155:84532": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af", // Base Sepolia (scripts/sepolia/deployed.base-sepolia.json)
+};
+export type RailTransfer = { token: string; from?: string; to: string; amount: string }; // lowercased; from set for EVM
 export type RailRead =
   | { kind: "unsupported"; detail: string }
   | { kind: "unreachable"; detail: string }
   | { kind: "absent"; detail: string }          // reachable, but tx not found / not successful
-  | { kind: "found"; transfers: RailTransfer[] }; // tx succeeded; its ERC-20 Transfer events
+  | { kind: "found"; transfers: RailTransfer[]; splitEvents?: { emitter: string }[] }; // tx succeeded; ERC-20 Transfers (+ EVM SettlementRouted emitters)
 
 // viem chains for the EVM rails we can confirm today; extend as more EVM rails are needed.
 const EVM_CHAINS: Record<string, Chain> = { "eip155:8453": base, "eip155:84532": baseSepolia };
@@ -136,13 +146,39 @@ export async function readEvmSettlement(receipt: SettlementReceipt, opts?: { rpc
       .filter((l) => (l.topics[0]?.toLowerCase() === TRANSFER_TOPIC) && l.topics.length === 3)
       .map((l) => ({
         token: l.address.toLowerCase(),
+        from: ("0x" + (l.topics[1] as string).slice(-40)).toLowerCase(),
         to: ("0x" + (l.topics[2] as string).slice(-40)).toLowerCase(),
         amount: BigInt(l.data).toString(),
       }));
-    return { kind: "found", transfers };
+    // SettlementRouted emitters in the same tx (the EVM contract-enforcement signal; empty on most txs).
+    const splitEvents = rc.logs
+      .filter((l) => l.topics[0]?.toLowerCase() === SETTLEMENT_ROUTED_TOPIC)
+      .map((l) => ({ emitter: l.address.toLowerCase() }));
+    return { kind: "found", transfers, splitEvents };
   } catch (e) {
     return { kind: "unreachable", detail: `rail RPC error: ${(e as Error).message}` };
   }
+}
+
+// EVM chain-enforcement binding (MUST be byte-identical to rail-verify.py). protocolEnforced1pct may be
+// TRUE only if the split was performed by the PINNED SettlementSplit for this rail: (1) the tx emitted a
+// SettlementRouted event FROM the pinned address (the contract's own assertion), AND (2) every declared
+// leg was sent BY that pinned contract (Transfer.from == pinned). Both are required; missing either, or a
+// rail with no pinned deployment, → not bound (the chain_enforced claim cannot be independently confirmed).
+function checkSplitContractBinding(
+  receipt: SettlementReceipt,
+  transfers: RailTransfer[],
+  splitEvents: { emitter: string }[] | undefined,
+): { bound: boolean; detail: string } {
+  const pinned = SETTLEMENT_SPLIT[receipt.rail];
+  if (!pinned) return { bound: false, detail: `no pinned SettlementSplit for rail ${receipt.rail} — chain enforcement cannot be confirmed` };
+  const eventFromPinned = (splitEvents ?? []).some((e) => e.emitter === pinned);
+  const token = normAddr(receipt.rail, receipt.asset.rail_address);
+  const legsFromPinned = receipt.split.legs.every((leg) =>
+    transfers.some((tr) => tr.token === token && tr.to === normAddr(receipt.rail, leg.dest) && tr.amount === leg.amount && tr.from === pinned));
+  if (!eventFromPinned) return { bound: false, detail: `no SettlementRouted event from the pinned SettlementSplit ${pinned}` };
+  if (!legsFromPinned) return { bound: false, detail: `split legs were not all emitted by the pinned SettlementSplit ${pinned} (Transfer.from mismatch)` };
+  return { bound: true, detail: `split bound to the pinned SettlementSplit ${pinned} (SettlementRouted + all legs from the contract)` };
 }
 
 // ── shared parity-critical helpers (MUST be byte-identical to rail-verify.py) ───────────────────
@@ -397,8 +433,17 @@ async function assessRailCore(receipt: SettlementReceipt, read: RailRead): Promi
   const isEvm = receipt.rail.startsWith("eip155:");
 
   if (receipt.enforcement === "chain_enforced" && isEvm && agentToSelf && split.ok) {
-    return finalize("rail_settlement_confirmed", "ok", "Settlement CONFIRMED on-chain — inviolable-1% independently verified",
-      `Every declared split leg matches an on-chain transfer in the proof tx, INCLUDING the agent's 1% (${agentLeg!.amount}) to home.self_wallet — so the inviolable-1% is independently confirmed from the chain itself, not merely asserted.`, true);
+    // EVM contract-binding (the gap-closer): protocolEnforced1pct=true ONLY if the split was performed by
+    // the PINNED SettlementSplit — its SettlementRouted event AND all legs sent by it (Transfer.from). Without
+    // this, three transfers in the 97/1/2 ratio + a chain_enforced string would forge a "protocol-enforced" pass.
+    const binding = checkSplitContractBinding(receipt, read.transfers, read.splitEvents);
+    checks.push({ label: "Split performed by the pinned SettlementSplit contract", result: binding.bound ? "pass" : "fail", detail: binding.detail });
+    if (binding.bound) {
+      return finalize("rail_settlement_confirmed", "ok", "Settlement CONFIRMED on-chain — inviolable-1% independently verified",
+        `Every declared split leg matches an on-chain transfer in the proof tx, INCLUDING the agent's 1% (${agentLeg!.amount}) to home.self_wallet, and the split was performed by the pinned SettlementSplit contract — so the inviolable-1% is independently confirmed from the chain itself, not merely asserted.`, true);
+    }
+    return finalize("rail_settlement_confirmed", "ok", "Declared payments CONFIRMED — chain_enforced claim NOT contract-verified",
+      `Every declared split leg matches an on-chain transfer, but the split could NOT be bound to the pinned SettlementSplit contract (${binding.detail}). The enforcement="chain_enforced" claim is therefore NOT independently confirmed — treat the 1% as proven-and-audited, NOT protocol-enforced.`, false);
   }
 
   // confirmed payments, but NOT protocol-enforced (off-ledger, or a chain_enforced claim we can't tie to the 1%-leg)

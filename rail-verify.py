@@ -28,6 +28,16 @@ from eth_account.messages import encode_defunct
 
 SETTLEMENT_RECEIPT_ACTION_TYPE = "settlement_receipt"
 TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"  # keccak256("Transfer(address,address,uint256)")
+# keccak256("SettlementRouted(uint256,uint256,uint256,uint256,uint256,address,address,address)") — the event
+# Block D's SettlementSplit emits on EVERY on-chain split. Its presence (from the pinned address) is the
+# contract asserting "I routed this split"; it is what makes chain_enforced more than a forgeable string.
+SETTLEMENT_ROUTED_TOPIC = "0xa339757253da7d5a07fa887dad737e505a084a8c182b5bffa32cc551fa355070"
+# Pinned, audited SettlementSplit deployments per EVM rail (lowercased). The verifier CARRIES these (like
+# the allowlist) and NEVER trusts a contract address from the receipt. A rail with no pinned deployment
+# CANNOT have a chain_enforced claim confirmed -> protocolEnforced1pct=false (e.g. Base mainnet until deployed).
+SETTLEMENT_SPLIT = {
+    "eip155:84532": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",  # Base Sepolia (scripts/sepolia/deployed.base-sepolia.json)
+}
 BPS = 10_000
 EVM_RAILS = {"eip155:8453", "eip155:84532"}
 DEFAULT_RPCS = {"eip155:8453": "https://mainnet.base.org", "eip155:84532": "https://sepolia.base.org"}
@@ -90,7 +100,9 @@ def check_split_consistency(receipt: dict) -> dict:
 # ── per-rail reader (raw JSON-RPC like yolo-verify.py; stubs un-wired rails) ─────────────────────
 def _rpc_call(rpc_url: str, method: str, params: list):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json"})
+    # User-Agent: Cloudflare-fronted RPCs (e.g. sepolia.base.org) reject urllib's default UA with HTTP 403.
+    # Transport-only — does not touch the verdict/assess logic or TS<->Python parity.
+    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json", "User-Agent": "yolo-audit-verifier"})
     with urllib.request.urlopen(req, timeout=25) as resp:
         return json.loads(resp.read()).get("result")
 
@@ -115,12 +127,38 @@ def read_evm_settlement(receipt: dict, rpc_url=None) -> dict:
             if len(topics) == 3 and topics[0].lower() == TRANSFER_TOPIC:
                 transfers.append({
                     "token": log["address"].lower(),
+                    "from": ("0x" + topics[1][-40:]).lower(),
                     "to": ("0x" + topics[2][-40:]).lower(),
                     "amount": str(int(log["data"], 16)),
                 })
-        return {"kind": "found", "transfers": transfers}
+        # SettlementRouted emitters in the same tx (the EVM contract-enforcement signal; empty on most txs).
+        split_events = [{"emitter": log["address"].lower()} for log in rc.get("logs", [])
+                        if (log.get("topics") or [""])[0].lower() == SETTLEMENT_ROUTED_TOPIC]
+        return {"kind": "found", "transfers": transfers, "splitEvents": split_events}
     except Exception as e:
         return {"kind": "unreachable", "detail": f"rail RPC error: {e}"}
+
+
+# EVM chain-enforcement binding (MUST be byte-identical to rail-verify.ts). protocolEnforced1pct may be
+# TRUE only if the split was performed by the PINNED SettlementSplit for this rail: (1) the tx emitted a
+# SettlementRouted event FROM the pinned address (the contract's own assertion), AND (2) every declared
+# leg was sent BY that pinned contract (Transfer.from == pinned). Both are required; missing either, or a
+# rail with no pinned deployment, -> not bound (the chain_enforced claim cannot be independently confirmed).
+def check_split_contract_binding(receipt, transfers, split_events):
+    pinned = SETTLEMENT_SPLIT.get(receipt["rail"])
+    if not pinned:
+        return {"bound": False, "detail": f"no pinned SettlementSplit for rail {receipt['rail']} — chain enforcement cannot be confirmed"}
+    event_from_pinned = any(e.get("emitter") == pinned for e in (split_events or []))
+    token = norm_addr(receipt["rail"], receipt["asset"]["rail_address"])
+    legs_from_pinned = all(
+        any(tr["token"] == token and tr["to"] == norm_addr(receipt["rail"], leg["dest"]) and tr["amount"] == leg["amount"] and tr.get("from") == pinned
+            for tr in transfers)
+        for leg in receipt["split"]["legs"])
+    if not event_from_pinned:
+        return {"bound": False, "detail": f"no SettlementRouted event from the pinned SettlementSplit {pinned}"}
+    if not legs_from_pinned:
+        return {"bound": False, "detail": f"split legs were not all emitted by the pinned SettlementSplit {pinned} (Transfer.from mismatch)"}
+    return {"bound": True, "detail": f"split bound to the pinned SettlementSplit {pinned} (SettlementRouted + all legs from the contract)"}
 
 
 # ── shared parity-critical helpers (MUST be byte-identical to rail-verify.ts) ────────────────────
@@ -356,11 +394,23 @@ def _assess_rail_core(receipt: dict, read: dict) -> dict:
     is_evm = receipt["rail"].startswith("eip155:")
 
     if receipt.get("enforcement") == "chain_enforced" and is_evm and agent_to_self and split["ok"]:
+        # EVM contract-binding (the gap-closer): protocolEnforced1pct=true ONLY if the split was performed by
+        # the PINNED SettlementSplit — its SettlementRouted event AND all legs sent by it (Transfer.from). Without
+        # this, three transfers in the 97/1/2 ratio + a chain_enforced string would forge a "protocol-enforced" pass.
+        binding = check_split_contract_binding(receipt, read.get("transfers", []), read.get("splitEvents"))
+        checks.append({"label": "Split performed by the pinned SettlementSplit contract",
+                       "result": "pass" if binding["bound"] else "fail", "detail": binding["detail"]})
+        if binding["bound"]:
+            return finalize("rail_settlement_confirmed", "ok",
+                            "Settlement CONFIRMED on-chain — inviolable-1% independently verified",
+                            f"Every declared split leg matches an on-chain transfer in the proof tx, INCLUDING the agent's 1% "
+                            f"({agent_leg['amount']}) to home.self_wallet, and the split was performed by the pinned SettlementSplit "
+                            f"contract — so the inviolable-1% is independently confirmed from the chain itself, not merely asserted.", True)
         return finalize("rail_settlement_confirmed", "ok",
-                        "Settlement CONFIRMED on-chain — inviolable-1% independently verified",
-                        f"Every declared split leg matches an on-chain transfer in the proof tx, INCLUDING the agent's 1% "
-                        f"({agent_leg['amount']}) to home.self_wallet — so the inviolable-1% is independently confirmed from "
-                        f"the chain itself, not merely asserted.", True)
+                        "Declared payments CONFIRMED — chain_enforced claim NOT contract-verified",
+                        f"Every declared split leg matches an on-chain transfer, but the split could NOT be bound to the pinned "
+                        f"SettlementSplit contract ({binding['detail']}). The enforcement=\"chain_enforced\" claim is therefore NOT "
+                        f"independently confirmed — treat the 1% as proven-and-audited, NOT protocol-enforced.", False)
 
     why = ("enforcement=attested_off_ledger: the 1% is PROVEN-AND-AUDITED (the declared payments exist and follow the "
            "97/1/2 ratio) but was NOT enforced by an on-chain protocol — this tool does NOT and cannot assert protocol-level "

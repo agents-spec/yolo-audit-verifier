@@ -65,13 +65,25 @@ plus the receipt's signature check: `attestation_valid | attestation_invalid` (t
 leg's **amount → destination** matches the actual on-chain transfers (asset included). For an EVM
 `chain_enforced` receipt it additionally confirms the inviolable **1%** from the transaction itself —
 the agent leg's `ceil(1%)` to the home `self_wallet` is an on-chain transfer in the proof tx, not
-merely asserted (`protocolEnforced1pct = true`).
+merely asserted — **and** that the split was performed by the pinned `SettlementSplit` contract (the
+proof tx emitted its `SettlementRouted` event AND every split leg's `Transfer.from` is that contract),
+so `protocolEnforced1pct = true` means contract-enforced, not just correctly-proportioned.
 
 ### What it does NOT claim (read this)
 - **Off-ledger rails are proven-and-audited, NOT protocol-enforced.** On XRPL / non-programmable rails
   the split is separate native payments, so the 1% is *verified to have occurred*, not *enforced by a
-  contract*. `protocolEnforced1pct` is **true only** for a confirmed **EVM `chain_enforced`** receipt;
-  it is **false** for every off-ledger confirmation, even a fully matched one.
+  contract*. `protocolEnforced1pct` is **true only** for a confirmed **EVM `chain_enforced`** receipt
+  bound to the pinned contract (below); it is **false** for every off-ledger confirmation, even a fully
+  matched one.
+- **`chain_enforced` is bound to a KNOWN contract — not just the right amounts.** `protocolEnforced1pct
+  = true` additionally requires the proof tx to **(1)** emit `SettlementRouted` from the **pinned**
+  `SettlementSplit` **and (2)** have every split leg sent **by** that contract (`Transfer.from`). Three
+  transfers in the correct 97/1/2 ratio from any other source do **not** qualify (see fixture
+  `f_evm_chain_enforced_unbound` → `false`). The verifier **carries** the pinned addresses and never
+  trusts a contract address from the receipt:
+  - **Base Sepolia (`eip155:84532`) → `0xe7680c1B6132DEC06CcDf6a863D09037EcBe03Af`**
+  - **Base mainnet is intentionally absent** until a mainnet `SettlementSplit` is deployed and pinned —
+    so a mainnet `chain_enforced` claim returns `protocolEnforced1pct = false` (honest by construction).
 - **Tamper-evident, NOT omission-evident.** A confirmed receipt proves *this* settlement is real and
   unaltered; it **cannot** prove the agent had no other, unsealed settlements.
 - **Declared legs only.** It confirms the legs the receipt declares; it does **not** assert that no
@@ -90,7 +102,9 @@ merely asserted (`protocolEnforced1pct = true`).
 
 ### Verify it yourself (offline, static fixtures)
 Self-contained demos — no network, no monorepo, runnable from a clone. They cover: EVM
-confirmed-and-1%-enforced, XRPL off-ledger confirmed-but-NOT-enforced (the honesty case),
+confirmed-and-1%-enforced (bound to the pinned `SettlementSplit`), an EVM `chain_enforced` claim with
+the correct 97/1/2 ratio but **NOT** from the pinned contract → `protocolEnforced1pct = false` (the
+contract-binding honesty case), XRPL off-ledger confirmed-but-NOT-enforced (the honesty case),
 wrong-issuer and Solana ATA-not-owner mismatches, and an unsupported rail.
 ```sh
 # Node (deps: tsx + viem)
