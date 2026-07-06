@@ -1,0 +1,34 @@
+[
+  {
+    "name": "leaf_not_bound_forged__both_must_reject",
+    "assert": "verdict",
+    "expectedVerdict": "anchor_root_mismatch",
+    "expectedMerkleResult": "fail",
+    "expectMerkleReasonContains": "leaf",
+    "onChainRoot": "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb",
+    "onChainReachable": true,
+    "bundle": {
+      "entry": { "id": 7217, "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217", "seq": 0, "action_type": "decision_consequential", "prev_hash": "genesis", "canon_version": "v1", "payload": { "tool": "atxp", "amount_usdc": 1 } },
+      "hashes": { "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8", "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b" },
+      "status": "verified", "verified": false, "anchored": true,
+      "anchor": { "status": "onchain", "root": "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb", "tx": null, "basescan_url": "x", "batch": { "first_seq": 0, "last_seq": 0, "log_count": 1, "ipfs_cid": null } },
+      "merkle_proof": { "leaf": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "steps": [], "single_leaf_batch": true },
+      "classification": { "kind": "normal", "label": "decision", "redacted": false, "reason": "production decision" }
+    }
+  },
+  {
+    "name": "leaf_bound_honest_control__merkle_step_passes",
+    "assert": "merkle_step",
+    "expectedMerkleResult": "pass",
+    "onChainRoot": null,
+    "onChainReachable": true,
+    "bundle": {
+      "entry": { "id": 7217, "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217", "seq": 0, "action_type": "decision_consequential", "prev_hash": "genesis", "canon_version": "v1", "payload": { "tool": "atxp", "amount_usdc": 1 } },
+      "hashes": { "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8", "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b" },
+      "status": "verified", "verified": false, "anchored": true,
+      "anchor": { "status": "onchain", "root": "c8771b4927107d30c4e66bfd13d063f8ba8d3431f0480793a7b82287e67c8665", "tx": null, "basescan_url": "x", "batch": { "first_seq": 0, "last_seq": 0, "log_count": 1, "ipfs_cid": null } },
+      "merkle_proof": { "leaf": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b", "steps": [], "single_leaf_batch": true },
+      "classification": { "kind": "normal", "label": "decision", "redacted": false, "reason": "production decision" }
+    }
+  }
+]

@@ -221,7 +221,14 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
 
   const recomputedRoot  = await recomputeRootFromProof(bundle.merkle_proof.leaf, bundle.merkle_proof.steps, bundle.merkle_proof.single_leaf_batch);
   const apiRoot         = bundle.anchor.root.toLowerCase();
-  const merkleMatchesApi = recomputedRoot === apiRoot;
+  const rootReconciles  = recomputedRoot === apiRoot;
+  // PARITY with yolo-verify.py L232 (leaf_ok): the proof's leaf must be THIS entry's chain_hash.
+  // Without this, a bundle whose leaf is disconnected from the payload but whose leaf-derived root
+  // matches the anchor folds an UNRELATED leaf to a real root — the Merkle step would read "pass"
+  // while proving nothing about this payload. Fold leaf-binding in exactly as Python does
+  // (merkle_ok = leaf_ok AND recomputed_root == anchor.root).
+  const leafOk          = bundle.merkle_proof.leaf === bundle.hashes.chain_hash;
+  const merkleMatchesApi = leafOk && rootReconciles;
   const onChainOk        = onChainRoot !== null ? recomputedRoot === onChainRoot.toLowerCase() : null;
 
   const checks: ClientCheck[] = [
@@ -230,7 +237,11 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
     {
       label: "Merkle proof reconciles to the proof's root",
       result: merkleMatchesApi ? "pass" : "fail",
-      detail: merkleMatchesApi ? undefined : `recomputed ${recomputedRoot.slice(0, 12)}… ≠ claimed ${apiRoot.slice(0, 12)}…`,
+      detail: merkleMatchesApi
+        ? undefined
+        : !leafOk
+          ? `proof leaf ${bundle.merkle_proof.leaf.slice(0, 12)}… ≠ this entry's chain_hash ${bundle.hashes.chain_hash.slice(0, 12)}… — leaf not bound to the payload`
+          : `recomputed ${recomputedRoot.slice(0, 12)}… ≠ claimed ${apiRoot.slice(0, 12)}…`,
     },
     {
       label: "Recomputed root matches the root anchored on Base",
@@ -252,7 +263,9 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
       tone: "bad",
       headline: "Anchor proof INVALID — do not trust",
       note: !merkleMatchesApi
-        ? "Your browser recomputed the Merkle root from this proof and it does NOT match the root in the bundle. The anchor data is inconsistent — this entry is NOT verifiably anchored."
+        ? (!leafOk
+            ? "The Merkle proof's leaf is NOT this entry's chain_hash. The proof folds an unrelated leaf to the anchored root, so it proves nothing about THIS entry's payload — do not trust this proof."
+            : "Your browser recomputed the Merkle root from this proof and it does NOT match the root in the bundle. The anchor data is inconsistent — this entry is NOT verifiably anchored.")
         : "Your browser recomputed the Merkle root and it does NOT match the root anchored on Base mainnet. Do not trust this proof.",
       checks,
       serverClassification,
