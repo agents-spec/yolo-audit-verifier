@@ -130,6 +130,12 @@ Nothing here claims more than the code does. Where something is a fixture or a t
 ## License
 MIT — see [LICENSE](./LICENSE). Fork it, run it, audit it.
 
+## Acknowledgments
+
+Independent review and findings:
+
+- **Matthew Akolade** — second-pass forensic review; identified the `merkle_proof.leaf` ↔ `chain_hash` binding gap (TS/Python verdict divergence), fixed in `5ead9b2`.
+
 ---
 
 Yolo is the verification layer for any AI making decisions that matter — agent commerce today, decisional logging (clinical, moderation, underwriting) next. Full context at **[yolo.solutions](https://yolo.solutions)**.
