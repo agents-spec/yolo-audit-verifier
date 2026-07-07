@@ -188,7 +188,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   // auditor sees how much was actually bound. v1 binds only top-level keys (nested keys collapse), v2
   // binds the full payload, reference/seed is membership-only (payload not re-hashed).
   const canonScope = canon === "v2" ? "full payload bound" : "top-level only — nested keys not bound";
-  const scope = isRefSeed ? "Merkle-membership only — payload not re-hashed" : canonScope;
+  const scope = redacted ? "Merkle-membership only — payload not re-hashed" : canonScope;
 
   const payloadOk = redacted ? null : (await recomputePayloadHash(bundle.entry.payload, canon)) === bundle.hashes.payload_hash;
   const chainOk   = redacted ? null : (await recomputeChainHash(bundle.entry.agent_id, bundle.entry.seq, bundle.entry.prev_hash, bundle.hashes.payload_hash)) === bundle.hashes.chain_hash;
@@ -229,7 +229,7 @@ export async function recomputeAndAssess(bundle: ProofBundle, onChainRoot: strin
   // (merkle_ok = leaf_ok AND recomputed_root == anchor.root).
   const leafOk          = bundle.merkle_proof.leaf === bundle.hashes.chain_hash;
   const merkleMatchesApi = leafOk && rootReconciles;
-  const onChainOk        = onChainRoot !== null ? recomputedRoot === onChainRoot.toLowerCase() : null;
+  const onChainOk        = onChainRoot !== null ? (leafOk && recomputedRoot === onChainRoot.toLowerCase()) : null;
 
   const checks: ClientCheck[] = [
     payloadCheck,

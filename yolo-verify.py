@@ -196,7 +196,7 @@ def verify(bundle: dict, rpc_url: str, anchor_addr: str, basescan_key=None) -> d
     # Attestation scope — declared in EVERY verdict so canon binding is never hidden. v1 binds only
     # top-level keys (nested collapse); v2 binds the full payload; reference/seed is membership-only.
     _canon = entry.get("canon_version") or "v1"
-    scope = ("Merkle-membership only — payload not re-hashed" if is_ref_seed
+    scope = ("Merkle-membership only — payload not re-hashed" if redacted
              else "full payload bound" if _canon == "v2"
              else "top-level only — nested keys not bound")
 
@@ -290,7 +290,7 @@ VERDICT_LINE = {
     "anchored_payload_anomaly": "ANCHORED PAYLOAD ANOMALY — chain hash IS anchored, but the payload does not re-hash. Operator: documented legacy anomaly, not tampering.",
     "payload_hash_mismatch": "PAYLOAD HASH MISMATCH — payload does not re-hash and is not an allow-listed anomaly. Potential integrity issue.",
     "rpc_unreachable": "RPC UNREACHABLE — recomputed in this tool, but NO Base RPC answered. A connectivity problem, NOT evidence the anchor is missing. Retry with --rpc.",
-    "anchor_absent": "ANCHOR ABSENT — a reachable Base RPC returned NO matching anchor for this seq range. The claimed anchor is not on-chain.",
+    "anchor_absent": "ANCHOR ABSENT — a reachable Base source returned NO matching anchor for this seq range. The claimed anchor is not on-chain.",
     "anchor_mismatch": "ANCHOR MISMATCH — the referenced tx is not a valid anchorBatch of this batch (wrong target/selector/seq or failed). Do not trust.",
 }
 
@@ -333,9 +333,16 @@ def main():
     if res.get("operator_classification"):
         print(f"\n  operator classification: {res['operator_classification']}")
     print(f"\nVERDICT: {verdict.upper()} {'✓' if verdict == 'verified' else ''}")
-    print(f"  {VERDICT_LINE.get(verdict, '')}")
+    anchor_had_tx = bool((bundle.get("anchor") or {}).get("tx"))
+    if verdict == "anchor_absent" and not anchor_had_tx:
+        # No anchor tx in the bundle: nothing was ever queried on-chain, so this is NOT a
+        # reachable-source-said-no. Report it as unverifiable, not a confirmed on-chain absence.
+        print("  ANCHOR ABSENT — the bundle carries NO anchor tx to check, so no Base source was reached. "
+              "This is UNVERIFIABLE (the claimed anchor was never queried on-chain), NOT a confirmed on-chain absence.")
+    else:
+        print(f"  {VERDICT_LINE.get(verdict, '')}")
     print(f"  scope: {res.get('scope', '')}")
-    if verdict == "anchor_absent":
+    if verdict == "anchor_absent" and anchor_had_tx:
         ab = (bundle.get("anchor") or {}).get("batch") or {}
         floor = LAST_KNOWN_ANCHORS.get(bundle["entry"].get("agent_id"))
         hard = floor is not None and ab.get("last_seq", 1 << 62) <= floor["lastSeq"]
