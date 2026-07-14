@@ -131,34 +131,114 @@ def read_evm_settlement(receipt: dict, rpc_url=None) -> dict:
                     "to": ("0x" + topics[2][-40:]).lower(),
                     "amount": str(int(log["data"], 16)),
                 })
-        # SettlementRouted emitters in the same tx (the EVM contract-enforcement signal; empty on most txs).
-        split_events = [{"emitter": log["address"].lower()} for log in rc.get("logs", [])
-                        if (log.get("topics") or [""])[0].lower() == SETTLEMENT_ROUTED_TOPIC]
+        # Decoded SettlementRouted events in the same tx (the EVM contract-enforcement signal; empty on most
+        # txs). We keep the FULL payload — the contract's own assertion of gross/shares/destinations — because
+        # the binding must re-check those fields, not merely that some event fired from the pinned address.
+        split_events = []
+        for log in rc.get("logs", []):
+            if (log.get("topics") or [""])[0].lower() == SETTLEMENT_ROUTED_TOPIC:
+                ev = decode_settlement_routed(log["address"].lower(), log.get("data", "0x"))
+                if ev is not None:
+                    split_events.append(ev)
         return {"kind": "found", "transfers": transfers, "splitEvents": split_events}
     except Exception as e:
         return {"kind": "unreachable", "detail": f"rail RPC error: {e}"}
 
 
-# EVM chain-enforcement binding (MUST be byte-identical to rail-verify.ts). protocolEnforced1pct may be
-# TRUE only if the split was performed by the PINNED SettlementSplit for this rail: (1) the tx emitted a
-# SettlementRouted event FROM the pinned address (the contract's own assertion), AND (2) every declared
-# leg was sent BY that pinned contract (Transfer.from == pinned). Both are required; missing either, or a
-# rail with no pinned deployment, -> not bound (the chain_enforced claim cannot be independently confirmed).
+# Decode a SettlementRouted(uint256 indexed tokenId, uint256 gross, uint256 agentShare, uint256
+# treasuryShare, uint256 ownerShare, address agentWallet, address ownerTba, address treasury) log's DATA
+# (the 7 non-indexed words; tokenId is topics[1], unused here). Returns None if the data is not a full
+# 7-word payload (a truncated/foreign log can never satisfy the binding). MUST match rail-verify.ts.
+def decode_settlement_routed(emitter: str, data: str):
+    hex_ = data[2:] if data.startswith("0x") else data
+    if len(hex_) < 7 * 64:
+        return None  # not a full SettlementRouted payload
+
+    def word(i):
+        return hex_[i * 64:(i + 1) * 64]
+
+    def uint(i):
+        return str(int(word(i), 16))  # decimal string (parity with the TS BigInt().toString())
+
+    def addr(i):
+        return ("0x" + word(i)[-40:]).lower()  # address = low 20 bytes of the word
+
+    return {
+        "emitter": emitter,
+        "gross": uint(0), "agentShare": uint(1), "treasuryShare": uint(2), "ownerShare": uint(3),
+        "agentWallet": addr(4), "ownerTba": addr(5), "treasury": addr(6),
+    }
+
+
+# PURE: does this decoded event assert EXACTLY the declared split? Returns None on a full match, else the
+# FIRST field that diverges (named, not a generic mismatch — the leaf-binding pattern). agentWallet/ownerTba/
+# treasury are the event's own destination fields; each must equal the corresponding leg's dest. MUST match
+# rail-verify.ts's settlementRoutedMismatch.
+def settlement_routed_mismatch(receipt, e, agent, treasury, owner):
+    def addr(s):
+        return norm_addr(receipt["rail"], s)  # EVM: lowercased both sides
+
+    if e["gross"] != receipt["amount"]:
+        return f"SettlementRouted gross {e['gross']} != receipt amount {receipt['amount']}"
+    if e["agentShare"] != agent["amount"]:
+        return f"SettlementRouted agentShare {e['agentShare']} != agent leg amount {agent['amount']}"
+    if e["agentWallet"] != addr(agent["dest"]):
+        return f"SettlementRouted agentWallet {e['agentWallet']} != agent leg dest {addr(agent['dest'])}"
+    if e["treasuryShare"] != treasury["amount"]:
+        return f"SettlementRouted treasuryShare {e['treasuryShare']} != treasury leg amount {treasury['amount']}"
+    if e["treasury"] != addr(treasury["dest"]):
+        return f"SettlementRouted treasury {e['treasury']} != treasury leg dest {addr(treasury['dest'])}"
+    if e["ownerShare"] != owner["amount"]:
+        return f"SettlementRouted ownerShare {e['ownerShare']} != owner leg amount {owner['amount']}"
+    if e["ownerTba"] != addr(owner["dest"]):
+        return f"SettlementRouted ownerTba {e['ownerTba']} != owner leg dest {addr(owner['dest'])}"
+    return None
+
+
+# EVM chain-enforcement binding (MUST be byte-identical to rail-verify.ts). protocolEnforced1pct may be TRUE
+# only if the split was performed by the PINNED SettlementSplit for this rail:
+#   (1) SEMANTIC — a SINGLE SettlementRouted event FROM the pinned address whose decoded payload asserts THIS
+#       exact split (gross==amount; agentShare+agentWallet, treasuryShare+treasury, ownerShare+ownerTba each
+#       == the corresponding leg). This is what defeats cross-call leg-laundering: legs cherry-picked from
+#       two settleTo() calls have NO single event asserting the claimed (gross, agentShare->agentWallet) tuple.
+#   (2) MOVEMENT (defense-in-depth) — every declared leg was actually sent BY the pinned contract
+#       (Transfer.from == pinned).
+# Both required; missing either, or a rail with no pinned deployment, -> not bound.
 def check_split_contract_binding(receipt, transfers, split_events):
     pinned = SETTLEMENT_SPLIT.get(receipt["rail"])
     if not pinned:
         return {"bound": False, "detail": f"no pinned SettlementSplit for rail {receipt['rail']} — chain enforcement cannot be confirmed"}
-    event_from_pinned = any(e.get("emitter") == pinned for e in (split_events or []))
+
+    legs = {l["role"]: l for l in receipt["split"]["legs"]}
+    agent, treasury, owner = legs.get("agent"), legs.get("treasury"), legs.get("owner")
+    if not (agent and treasury and owner):
+        return {"bound": False, "detail": "missing a required split leg (agent/treasury/owner)"}
+
+    # (1) SEMANTIC: a single SettlementRouted from the pinned contract must assert the full declared tuple.
+    events = [e for e in (split_events or []) if e.get("emitter") == pinned]
+    if not events:
+        return {"bound": False, "detail": f"no SettlementRouted event from the pinned SettlementSplit {pinned}"}
+    last_detail = ""
+    matched = False
+    for e in events:
+        m = settlement_routed_mismatch(receipt, e, agent, treasury, owner)
+        if m is None:
+            matched = True
+            break
+        last_detail = m
+    if not matched:
+        return {"bound": False, "detail": f"no SettlementRouted event from {pinned} matches the declared split ({last_detail})"}
+
+    # (2) MOVEMENT: every declared leg was actually transferred BY the pinned contract.
     token = norm_addr(receipt["rail"], receipt["asset"]["rail_address"])
     legs_from_pinned = all(
         any(tr["token"] == token and tr["to"] == norm_addr(receipt["rail"], leg["dest"]) and tr["amount"] == leg["amount"] and tr.get("from") == pinned
             for tr in transfers)
         for leg in receipt["split"]["legs"])
-    if not event_from_pinned:
-        return {"bound": False, "detail": f"no SettlementRouted event from the pinned SettlementSplit {pinned}"}
     if not legs_from_pinned:
         return {"bound": False, "detail": f"split legs were not all emitted by the pinned SettlementSplit {pinned} (Transfer.from mismatch)"}
-    return {"bound": True, "detail": f"split bound to the pinned SettlementSplit {pinned} (SettlementRouted + all legs from the contract)"}
+
+    return {"bound": True, "detail": f"split bound to the pinned SettlementSplit {pinned} (SettlementRouted asserts gross/agent/treasury/owner + all legs from the contract)"}
 
 
 # ── shared parity-critical helpers (MUST be byte-identical to rail-verify.ts) ────────────────────
