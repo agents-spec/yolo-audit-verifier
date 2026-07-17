@@ -16,9 +16,12 @@ FIVE STEPS:
 
 VERDICT mirrors the /verify page:
   verified | pending_anchor | anchor_root_mismatch | anchored_payload_anomaly |
-  payload_hash_mismatch | reference_seed | rpc_unreachable | anchor_absent | anchor_mismatch
+  payload_hash_mismatch | reference_seed | rpc_unreachable | anchor_absent | anchor_mismatch |
+  receipt_unconfirmed
   (rpc_unreachable = no RPC answered; anchor_absent = a reachable RPC found no matching anchor;
-   anchor_mismatch = the referenced tx is not a valid anchorBatch of this batch)
+   anchor_mismatch = the referenced tx is a CONFIRMED non-anchor of this batch — wrong target/
+   selector/seq, or a confirmed 0x0 revert; receipt_unconfirmed = read the tx calldata but the
+   receipt is missing/indeterminate, so success is unconfirmed — unreachable-class, NOT a negative)
 
 REFERENCE/SEED: some ids on a frozen allowlist are pre-Strict-B / development entries, not
 production decisions. Their readable payload may be WITHHELD (_redacted) by the proof API; this
@@ -30,7 +33,7 @@ USAGE:
   python3 yolo-verify.py --bundle bundle.json [--rpc URL] [--json]
 EXIT: 0 verified · 2 pending_anchor · 3 anchored_payload_anomaly · 4 rpc_unreachable ·
       5 anchor_root_mismatch · 6 payload_hash_mismatch · 7 reference_seed · 8 anchor_absent ·
-      9 anchor_mismatch · 1 error
+      9 anchor_mismatch · 10 receipt_unconfirmed · 1 error
 """
 import argparse
 import hashlib
@@ -81,7 +84,7 @@ with open(_FLOOR_PATH, encoding="utf-8") as _fh:
 
 EXIT = {"verified": 0, "error": 1, "pending_anchor": 2, "anchored_payload_anomaly": 3,
         "rpc_unreachable": 4, "anchor_root_mismatch": 5, "payload_hash_mismatch": 6,
-        "reference_seed": 7, "anchor_absent": 8, "anchor_mismatch": 9}
+        "reference_seed": 7, "anchor_absent": 8, "anchor_mismatch": 9, "receipt_unconfirmed": 10}
 
 
 def sha256_hex(s: str) -> str:
@@ -138,8 +141,20 @@ def _decode_anchor_tx(get_tx, get_receipt, anchor_addr, tx_hash, exp_first, exp_
     first_seq, last_seq = int(word(4), 16), int(word(5), 16)
     if first_seq != exp_first or last_seq != exp_last:
         return None, "mismatch", f"tx batch seq[{first_seq}-{last_seq}] != bundle seq[{exp_first}-{exp_last}]"
+    # Receipt gate — the ONLY thing separating "someone CLAIMED this root" from "this root was
+    # ANCHORED". A reverted tx still carries well-formed calldata, so an unconfirmed root must NEVER
+    # reach a comparison: return a root iff the receipt confirms success. Three distinct outcomes:
+    #   receipt null / indeterminate -> "unconfirmed" (reachable, read calldata, receipt not confirmed)
+    #       — unreachable-CLASS, NOT evidence against the anchor. root stays None.
+    #   status "0x0" (confirmed non-0x1) -> "mismatch" — a confirmed revert, a real negative, stays red.
+    #   status "0x1" -> "found" — confirmed; only NOW is a root returned.
     receipt = get_receipt(tx_hash)
     status = receipt.get("status") if receipt else None
+    if status is None:
+        return None, "unconfirmed", (
+            f"read tx {tx_hash[:10]}… and its calldata, but the receipt is missing/indeterminate — "
+            "the tx's success could not be confirmed. Unconfirmed calldata proves nothing "
+            "(a failed tx still carries calldata); NOT evidence against the anchor.")
     if status != "0x1":
         return None, "mismatch", f"tx not successful (status={status})"
     return root, "found", f"tx {tx_hash[:10]}…"
@@ -275,6 +290,8 @@ def verify(bundle: dict, rpc_url: str, anchor_addr: str, basescan_key=None) -> d
         verdict = "anchor_mismatch"
     elif onchain_status == "absent":
         verdict = "anchor_absent"
+    elif onchain_status == "unconfirmed":
+        verdict = "receipt_unconfirmed"
     elif onchain_status == "unreachable":
         verdict = "rpc_unreachable"
     else:
@@ -292,6 +309,7 @@ VERDICT_LINE = {
     "rpc_unreachable": "RPC UNREACHABLE — recomputed in this tool, but NO Base RPC answered. A connectivity problem, NOT evidence the anchor is missing. Retry with --rpc.",
     "anchor_absent": "ANCHOR ABSENT — a reachable Base source returned NO matching anchor for this seq range. The claimed anchor is not on-chain.",
     "anchor_mismatch": "ANCHOR MISMATCH — the referenced tx is not a valid anchorBatch of this batch (wrong target/selector/seq or failed). Do not trust.",
+    "receipt_unconfirmed": "RECEIPT UNCONFIRMED — read the tx and its calldata, but the receipt could not be confirmed on this source. Unconfirmed calldata proves nothing (a failed tx still carries calldata). This is NOT evidence against the anchor — retry, or cross-check on another source / Basescan.",
 }
 
 

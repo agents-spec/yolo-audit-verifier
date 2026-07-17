@@ -8,7 +8,18 @@ MERKLE_STEP = 2  # steps: [1.payload, 2.chain, 3.merkle, 4.onchain]
 failures = 0
 for fx in FIXTURES:
     name = fx["name"]
-    result = yv.verify(fx["bundle"], yv.DEFAULT_RPC, yv.ANCHOR_ADDRESS)  # anchor.tx null → no RPC hit
+    # Fixtures with an onChainStatus drive the on-chain-read OUTCOME directly (transport substituted),
+    # exactly as the TS harness injects (onChainRoot, onChainReachable, onChainStatus) into
+    # recomputeAndAssess — so both languages test the SAME verdict-precedence axis. Others (anchor.tx
+    # null) run end-to-end with no RPC hit, unchanged.
+    _orig_read = yv.read_onchain_root
+    if fx.get("onChainStatus") is not None:
+        _st = fx["onChainStatus"]; _root = fx.get("onChainRoot")
+        yv.read_onchain_root = lambda *a, _r=_root, _s=_st, **k: (_r, _s, "fixture-injected")
+    try:
+        result = yv.verify(fx["bundle"], yv.DEFAULT_RPC, yv.ANCHOR_ADDRESS)  # anchor.tx null → no RPC hit
+    finally:
+        yv.read_onchain_root = _orig_read
     merkle_ok = result["steps"][MERKLE_STEP][1]; merkle_detail = result["steps"][MERKLE_STEP][2]
     expect_pass = fx["expectedMerkleResult"] == "pass"
     if merkle_ok is not expect_pass:

@@ -39,6 +39,8 @@ const EXIT: Record<VerificationView["state"], number> = {
   rpc_unreachable: 4, anchor_root_mismatch: 5, payload_hash_mismatch: 6,
   reference_seed: 7, // pre-Strict-B / development reference-seed entry — chain membership only, not a production decision
   anchor_absent: 8,  // a reachable RPC found no matching anchor on-chain — the claimed anchor is not on Base
+  anchor_mismatch: 9, // the referenced tx is not a valid anchorBatch of this batch (Approach-B parse). This CLI reads contract state (getAnchor), so it does not emit this; present for exhaustiveness + exit-code parity with the exhibit and yolo-verify.py.
+  receipt_unconfirmed: 10, // reached Base, read the calldata, but the receipt is unconfirmed — not evidence against the anchor (this CLI reads contract state, so it does not emit this; present for exhaustiveness)
 };
 
 const flag = (name: string): string | undefined => {

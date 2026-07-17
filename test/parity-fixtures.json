@@ -8,12 +8,48 @@
     "onChainRoot": "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb",
     "onChainReachable": true,
     "bundle": {
-      "entry": { "id": 7217, "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217", "seq": 0, "action_type": "decision_consequential", "prev_hash": "genesis", "canon_version": "v1", "payload": { "tool": "atxp", "amount_usdc": 1 } },
-      "hashes": { "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8", "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b" },
-      "status": "verified", "verified": false, "anchored": true,
-      "anchor": { "status": "onchain", "root": "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb", "tx": null, "basescan_url": "x", "batch": { "first_seq": 0, "last_seq": 0, "log_count": 1, "ipfs_cid": null } },
-      "merkle_proof": { "leaf": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "steps": [], "single_leaf_batch": true },
-      "classification": { "kind": "normal", "label": "decision", "redacted": false, "reason": "production decision" }
+      "entry": {
+        "id": 7217,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_consequential",
+        "prev_hash": "genesis",
+        "canon_version": "v1",
+        "payload": {
+          "tool": "atxp",
+          "amount_usdc": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8",
+        "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b"
+      },
+      "status": "verified",
+      "verified": false,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb",
+        "tx": null,
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "steps": [],
+        "single_leaf_batch": true
+      },
+      "classification": {
+        "kind": "normal",
+        "label": "decision",
+        "redacted": false,
+        "reason": "production decision"
+      }
     }
   },
   {
@@ -23,12 +59,233 @@
     "onChainRoot": null,
     "onChainReachable": true,
     "bundle": {
-      "entry": { "id": 7217, "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217", "seq": 0, "action_type": "decision_consequential", "prev_hash": "genesis", "canon_version": "v1", "payload": { "tool": "atxp", "amount_usdc": 1 } },
-      "hashes": { "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8", "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b" },
-      "status": "verified", "verified": false, "anchored": true,
-      "anchor": { "status": "onchain", "root": "c8771b4927107d30c4e66bfd13d063f8ba8d3431f0480793a7b82287e67c8665", "tx": null, "basescan_url": "x", "batch": { "first_seq": 0, "last_seq": 0, "log_count": 1, "ipfs_cid": null } },
-      "merkle_proof": { "leaf": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b", "steps": [], "single_leaf_batch": true },
-      "classification": { "kind": "normal", "label": "decision", "redacted": false, "reason": "production decision" }
+      "entry": {
+        "id": 7217,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_consequential",
+        "prev_hash": "genesis",
+        "canon_version": "v1",
+        "payload": {
+          "tool": "atxp",
+          "amount_usdc": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "e2f906291628ad7e883333ec3347d50c667a9ea0d1806e79cf27dca4cb2b4aa8",
+        "chain_hash": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b"
+      },
+      "status": "verified",
+      "verified": false,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "c8771b4927107d30c4e66bfd13d063f8ba8d3431f0480793a7b82287e67c8665",
+        "tx": null,
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "f2fedc92a059313017d42de2149c39d779b6747dd4bf3fd67fac1afd165fb71b",
+        "steps": [],
+        "single_leaf_batch": true
+      },
+      "classification": {
+        "kind": "normal",
+        "label": "decision",
+        "redacted": false,
+        "reason": "production decision"
+      }
+    }
+  },
+  {
+    "name": "clean_plus_unconfirmed_receipt__receipt_unconfirmed",
+    "assert": "verdict",
+    "expectedVerdict": "receipt_unconfirmed",
+    "expectedMerkleResult": "pass",
+    "onChainRoot": null,
+    "onChainReachable": true,
+    "onChainStatus": "unconfirmed",
+    "bundle": {
+      "entry": {
+        "id": 201,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_routine",
+        "prev_hash": "genesis",
+        "canon_version": "v2",
+        "payload": {
+          "a": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862",
+        "chain_hash": "5247d3fd510dc1e0be44d42e4d09c19a18b50b6bc59b1688368f1906ef86563e"
+      },
+      "status": "verified",
+      "verified": true,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "3dc1512e6163add2ac4f8828d3f5133630ef88e11b4c75392b361842d7a006c0",
+        "tx": "0xe5a7d412e589c278d002c41bfac731cdacaa5d2a4e3bac46ae3417f1eebd2c2a",
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "5247d3fd510dc1e0be44d42e4d09c19a18b50b6bc59b1688368f1906ef86563e",
+        "steps": [],
+        "single_leaf_batch": true
+      }
+    }
+  },
+  {
+    "name": "tampered_payload_plus_unconfirmed_receipt__payload_hash_mismatch",
+    "assert": "verdict",
+    "expectedVerdict": "payload_hash_mismatch",
+    "expectedMerkleResult": "pass",
+    "onChainRoot": null,
+    "onChainReachable": true,
+    "onChainStatus": "unconfirmed",
+    "bundle": {
+      "entry": {
+        "id": 202,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_routine",
+        "prev_hash": "genesis",
+        "canon_version": "v2",
+        "payload": {
+          "a": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "chain_hash": "de8b346e4d17196edaeed4d2b17f5e08ff08ce1f9235b63143c7c535e6711571"
+      },
+      "status": "verified",
+      "verified": true,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "505c418d7d2d3462bef93f5cf78b56d9c20459a2c22e04d22e5ddb44e5d73e65",
+        "tx": "0xe5a7d412e589c278d002c41bfac731cdacaa5d2a4e3bac46ae3417f1eebd2c2a",
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "de8b346e4d17196edaeed4d2b17f5e08ff08ce1f9235b63143c7c535e6711571",
+        "steps": [],
+        "single_leaf_batch": true
+      }
+    }
+  },
+  {
+    "name": "forged_leaf_plus_unconfirmed_receipt__anchor_root_mismatch",
+    "assert": "verdict",
+    "expectedVerdict": "anchor_root_mismatch",
+    "expectedMerkleResult": "fail",
+    "expectMerkleReasonContains": "leaf",
+    "onChainRoot": null,
+    "onChainReachable": true,
+    "onChainStatus": "unconfirmed",
+    "bundle": {
+      "entry": {
+        "id": 203,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_routine",
+        "prev_hash": "genesis",
+        "canon_version": "v2",
+        "payload": {
+          "a": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862",
+        "chain_hash": "5247d3fd510dc1e0be44d42e4d09c19a18b50b6bc59b1688368f1906ef86563e"
+      },
+      "status": "verified",
+      "verified": true,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "3dc1512e6163add2ac4f8828d3f5133630ef88e11b4c75392b361842d7a006c0",
+        "tx": "0xe5a7d412e589c278d002c41bfac731cdacaa5d2a4e3bac46ae3417f1eebd2c2a",
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "steps": [],
+        "single_leaf_batch": true
+      }
+    }
+  },
+  {
+    "name": "calldata_mismatch__anchor_mismatch",
+    "assert": "verdict",
+    "expectedVerdict": "anchor_mismatch",
+    "expectedMerkleResult": "pass",
+    "onChainRoot": null,
+    "onChainReachable": true,
+    "onChainStatus": "mismatch",
+    "bundle": {
+      "entry": {
+        "id": 201,
+        "agent_id": "4fbe49c2-89f5-44e4-a995-89115f767217",
+        "seq": 0,
+        "action_type": "decision_routine",
+        "prev_hash": "genesis",
+        "canon_version": "v2",
+        "payload": {
+          "a": 1
+        }
+      },
+      "hashes": {
+        "payload_hash": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862",
+        "chain_hash": "5247d3fd510dc1e0be44d42e4d09c19a18b50b6bc59b1688368f1906ef86563e"
+      },
+      "status": "verified",
+      "verified": true,
+      "anchored": true,
+      "anchor": {
+        "status": "onchain",
+        "root": "3dc1512e6163add2ac4f8828d3f5133630ef88e11b4c75392b361842d7a006c0",
+        "tx": "0xe5a7d412e589c278d002c41bfac731cdacaa5d2a4e3bac46ae3417f1eebd2c2a",
+        "basescan_url": "x",
+        "batch": {
+          "first_seq": 0,
+          "last_seq": 0,
+          "log_count": 1,
+          "ipfs_cid": null
+        }
+      },
+      "merkle_proof": {
+        "leaf": "5247d3fd510dc1e0be44d42e4d09c19a18b50b6bc59b1688368f1906ef86563e",
+        "steps": [],
+        "single_leaf_batch": true
+      }
     }
   }
 ]
