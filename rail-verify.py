@@ -101,8 +101,10 @@ def check_split_consistency(receipt: dict) -> dict:
 def _rpc_call(rpc_url: str, method: str, params: list):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     # User-Agent: Cloudflare-fronted RPCs (e.g. sepolia.base.org) reject urllib's default UA with HTTP 403.
-    # Transport-only — does not touch the verdict/assess logic or TS<->Python parity.
-    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json", "User-Agent": "yolo-audit-verifier"})
+    # Match the TS side exactly: rail-verify.ts's viem client makes this same call over Node's global
+    # fetch (undici), which sends "node" verbatim — not a made-up string — so both runtimes present as
+    # the same client to the RPC. Transport-only — does not touch the verdict/assess logic or parity.
+    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json", "User-Agent": "node"})
     with urllib.request.urlopen(req, timeout=25) as resp:
         return json.loads(resp.read()).get("result")
 
