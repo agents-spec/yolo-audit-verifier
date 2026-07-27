@@ -93,8 +93,11 @@ def sha256_hex(s: str) -> str:
 
 def rpc_call(rpc_url: str, method: str, params: list):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
+    # User-Agent: Cloudflare-fronted RPCs (e.g. sepolia.base.org) reject urllib's default UA with HTTP 403.
+    # Match rail-verify.py exactly: viem/Node's fetch presents "node" verbatim — not an invented string —
+    # so both runtimes present as the same client to the RPC. Transport-only — does not touch verdicts.
     req = urllib.request.Request(rpc_url, data=body,
-                                 headers={"content-type": "application/json", "user-agent": "yolo-verify/1.0"})
+                                 headers={"content-type": "application/json", "User-Agent": "node"})
     with urllib.request.urlopen(req, timeout=25) as resp:
         out = json.load(resp)
     if out.get("error"):
