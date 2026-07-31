@@ -96,197 +96,6 @@
     }
   },
   {
-    "name": "g_evm_chain_enforced_cross_call_forgery",
-    "receipt": {
-      "schema": "yolo.settlement_receipt.v1",
-      "home": {
-        "chain": "eip155:8453",
-        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
-        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-      },
-      "rail": "eip155:84532",
-      "asset": {
-        "symbol": "USDC",
-        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        "decimals": 6
-      },
-      "amount": "1000000",
-      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
-      "proof": {
-        "kind": "evm_tx",
-        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      },
-      "split": {
-        "model": "97/1/2",
-        "rule": {
-          "agent_bps": 100,
-          "treasury_bps": 200,
-          "owner_bps": 9700
-        },
-        "legs": [
-          {
-            "role": "agent",
-            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            "amount": "10000"
-          },
-          {
-            "role": "treasury",
-            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
-            "amount": "20000"
-          },
-          {
-            "role": "owner",
-            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
-            "amount": "970000"
-          }
-        ]
-      },
-      "enforcement": "chain_enforced",
-      "settled_at": "2026-06-21T18:30:12Z",
-      "attestation": {
-        "scheme": "eip191",
-        "signer_role": "agent_self_wallet",
-        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
-        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-      }
-    },
-    "railInput": {
-      "kind": "found",
-      "transfers": [
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
-          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
-          "amount": "10000"
-        },
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
-          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
-          "amount": "20000"
-        },
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
-          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
-          "amount": "970000"
-        }
-      ],
-      "splitEvents": [
-        {
-          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
-          "gross": "1000000",
-          "agentShare": "10000",
-          "treasuryShare": "20000",
-          "ownerShare": "970000",
-          "agentWallet": "0x1111111111111111111111111111111111111199",
-          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
-          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
-        },
-        {
-          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
-          "gross": "10310",
-          "agentShare": "104",
-          "treasuryShare": "206",
-          "ownerShare": "10000",
-          "agentWallet": "0x1111111111111111111111111111111111111199",
-          "ownerTba": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
-          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
-        }
-      ]
-    },
-    "expected": {
-      "railVerdict": "rail_settlement_confirmed",
-      "attestation": "attestation_valid",
-      "protocolEnforced1pct": false
-    }
-  },
-  {
-    "name": "f_evm_chain_enforced_unbound",
-    "receipt": {
-      "schema": "yolo.settlement_receipt.v1",
-      "home": {
-        "chain": "eip155:8453",
-        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
-        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-      },
-      "rail": "eip155:84532",
-      "asset": {
-        "symbol": "USDC",
-        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        "decimals": 6
-      },
-      "amount": "1000000",
-      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
-      "proof": {
-        "kind": "evm_tx",
-        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      },
-      "split": {
-        "model": "97/1/2",
-        "rule": {
-          "agent_bps": 100,
-          "treasury_bps": 200,
-          "owner_bps": 9700
-        },
-        "legs": [
-          {
-            "role": "agent",
-            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-            "amount": "10000"
-          },
-          {
-            "role": "treasury",
-            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
-            "amount": "20000"
-          },
-          {
-            "role": "owner",
-            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
-            "amount": "970000"
-          }
-        ]
-      },
-      "enforcement": "chain_enforced",
-      "settled_at": "2026-06-21T18:30:12Z",
-      "attestation": {
-        "scheme": "eip191",
-        "signer_role": "agent_self_wallet",
-        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
-        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-      }
-    },
-    "railInput": {
-      "kind": "found",
-      "transfers": [
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0x000000000000000000000000000000000000dead",
-          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
-          "amount": "10000"
-        },
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0x000000000000000000000000000000000000dead",
-          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
-          "amount": "20000"
-        },
-        {
-          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
-          "from": "0x000000000000000000000000000000000000dead",
-          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
-          "amount": "970000"
-        }
-      ],
-      "splitEvents": []
-    },
-    "expected": {
-      "railVerdict": "rail_settlement_confirmed",
-      "attestation": "attestation_valid",
-      "protocolEnforced1pct": false
-    }
-  },
-  {
     "name": "b_xrpl_off_ledger_confirmed_not_enforced",
     "receipt": {
       "schema": "yolo.settlement_receipt.v1",
@@ -769,6 +578,1661 @@
     "expected": {
       "railVerdict": "rail_unsupported",
       "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "h_evm_operational_signer_seller_era_valid",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-07-26T12:00:00Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0x771373f819306606510d6f9a5942f3b6f6e9374a652c22473d803161d01cdd2937228a995b3bd75f8b9226bb25c14d2361fa5034efd6f84fb29b3eae584dd1ad1b",
+        "recovered_signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "opContext": {
+      "atBlock": 150,
+      "history": {
+        "designations": [
+          {
+            "owner": "0x1111111111111111111111111111111111111111",
+            "signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16",
+            "atBlock": 110
+          },
+          {
+            "owner": "0x2222222222222222222222222222222222222222",
+            "signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14",
+            "atBlock": 210
+          }
+        ],
+        "nftTransfers": [
+          {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x1111111111111111111111111111111111111111",
+            "atBlock": 100
+          },
+          {
+            "from": "0x1111111111111111111111111111111111111111",
+            "to": "0x2222222222222222222222222222222222222222",
+            "atBlock": 200
+          }
+        ]
+      }
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": true
+    }
+  },
+  {
+    "name": "i_evm_operational_signer_buyer_era_valid",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0x2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-07-26T12:00:00Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0x0f13350dab12f8511871d2e48fdd915ef32fe8d4e5bb8741157c5f56b96e62a8193e5cb7db8c109a96b580f898ccc580f1cdaf9177bb4043320ae12375ca44541b",
+        "recovered_signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "opContext": {
+      "atBlock": 250,
+      "history": {
+        "designations": [
+          {
+            "owner": "0x1111111111111111111111111111111111111111",
+            "signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16",
+            "atBlock": 110
+          },
+          {
+            "owner": "0x2222222222222222222222222222222222222222",
+            "signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14",
+            "atBlock": 210
+          }
+        ],
+        "nftTransfers": [
+          {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x1111111111111111111111111111111111111111",
+            "atBlock": 100
+          },
+          {
+            "from": "0x1111111111111111111111111111111111111111",
+            "to": "0x2222222222222222222222222222222222222222",
+            "atBlock": 200
+          }
+        ]
+      }
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": true
+    }
+  },
+  {
+    "name": "j_evm_operational_signer_seller_key_after_transfer_rejects",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0x3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-07-26T12:00:00Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xb2d364153fe24d4e159ae2f0145cf903f6c6574f4038d3cf6c8d462c0fb1c1232d4d7fe09acade91796e9275f5661b1ea375e5a1a3a2717f96b99de1e8afcfcd1c",
+        "recovered_signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "opContext": {
+      "atBlock": 250,
+      "history": {
+        "designations": [
+          {
+            "owner": "0x1111111111111111111111111111111111111111",
+            "signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16",
+            "atBlock": 110
+          },
+          {
+            "owner": "0x2222222222222222222222222222222222222222",
+            "signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14",
+            "atBlock": 210
+          }
+        ],
+        "nftTransfers": [
+          {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x1111111111111111111111111111111111111111",
+            "atBlock": 100
+          },
+          {
+            "from": "0x1111111111111111111111111111111111111111",
+            "to": "0x2222222222222222222222222222222222222222",
+            "atBlock": 200
+          }
+        ]
+      }
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_invalid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "k_evm_operational_signer_buyer_key_before_designation_rejects",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0x4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63B68c39aa587B2B4D5C04288f51e99d1F891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473AE30F872236e991f9F762056457a37158Ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-07-26T12:00:00Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xc539beaa526fb35f2cbcc4ad3f4819bcbe1d62b7f5a6ada38f522337419581d946ad1f2d23908bd0b3be713f8863d3a0035a49d8b2da87c8f402590dcbb2642e1b",
+        "recovered_signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "opContext": {
+      "atBlock": 205,
+      "history": {
+        "designations": [
+          {
+            "owner": "0x1111111111111111111111111111111111111111",
+            "signer": "0x268F63044CC2C10c57870cD44B9D7d93692f0d16",
+            "atBlock": 110
+          },
+          {
+            "owner": "0x2222222222222222222222222222222222222222",
+            "signer": "0x305892ffE83DBdfd582307D9Ae8D3119D44E3f14",
+            "atBlock": 210
+          }
+        ],
+        "nftTransfers": [
+          {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x1111111111111111111111111111111111111111",
+            "atBlock": 100
+          },
+          {
+            "from": "0x1111111111111111111111111111111111111111",
+            "to": "0x2222222222222222222222222222222222222222",
+            "atBlock": 200
+          }
+        ]
+      }
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_invalid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "g_evm_chain_enforced_cross_call_forgery",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x1111111111111111111111111111111111111199",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        },
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "10310",
+          "agentShare": "104",
+          "treasuryShare": "206",
+          "ownerShare": "10000",
+          "agentWallet": "0x1111111111111111111111111111111111111199",
+          "ownerTba": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "f_evm_chain_enforced_unbound",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0x000000000000000000000000000000000000dead",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": []
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "l_evm_chain_enforced_agentshare_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "9999",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "m_evm_chain_enforced_agentwallet_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x1111111111111111111111111111111111111111",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "n_evm_chain_enforced_treasuryshare_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "19999",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "o_evm_chain_enforced_treasury_dest_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x2222222222222222222222222222222222222222"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "p_evm_chain_enforced_ownershare_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "969999",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "q_evm_chain_enforced_ownertba_mismatch",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x3333333333333333333333333333333333333333",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_valid",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "r_unsupported_signature_scheme",
+    "description": "attestation.scheme changed to a non-eip191 value; signature bytes themselves are UNTOUCHED and still recover correctly (scheme lives inside the attestation block, outside the signed preimage) — a VALID eip191 signature over a receipt declaring a different scheme. Verifier must fail closed as attestation_unsupported_scheme (distinct from attestation_invalid) rather than silently running eip191 recovery against an undeclared scheme; protocolEnforced1pct must be false even though every other check (split legs, contract binding) still passes.",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "ml-dsa-65",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_unsupported_scheme",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "s_scheme_null",
+    "description": "attestation.scheme is JSON null (not a string at all). Verifier must fail closed identically to a wrong-string scheme — never let a non-string type reach the recovery call, and never let TS null/Python None formatting divergence leak into the detail string (both render the canonical token \"null\").",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": null,
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_unsupported_scheme",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "t_scheme_non_string_type",
+    "description": "attestation.scheme is a JSON number (not a string). Same fail-closed requirement as null: type confusion in the scheme field must never reach eip191 recovery, and the detail string must render a fixed canonical marker (never language-native number stringification, which diverges between JS and Python for non-integer values).",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": 12345,
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_unsupported_scheme",
+      "protocolEnforced1pct": false
+    }
+  },
+  {
+    "name": "u_scheme_newline_injection",
+    "description": "attestation.scheme is a string containing an embedded newline and text shaped like a fake verifier output line (log/evidence-forging attempt). The verifier's own output IS the evidence, so unauthenticated attacker-controlled data must never be interpolated raw into it. Detail string must hex-escape the newline (\\x0a) rather than emitting a literal line break.",
+    "receipt": {
+      "schema": "yolo.settlement_receipt.v1",
+      "home": {
+        "chain": "eip155:8453",
+        "nft": "0x00e4181b2Acb01d5B21eA556FF22FDcDA455Ad5A:1",
+        "self_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      },
+      "rail": "eip155:84532",
+      "asset": {
+        "symbol": "USDC",
+        "rail_address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6
+      },
+      "amount": "1000000",
+      "counterparty": "0xe19Ea19a0841a8BA91D1947B46c9D3f86f471CC9",
+      "proof": {
+        "kind": "evm_tx",
+        "tx_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "split": {
+        "model": "97/1/2",
+        "rule": {
+          "agent_bps": 100,
+          "treasury_bps": 200,
+          "owner_bps": 9700
+        },
+        "legs": [
+          {
+            "role": "agent",
+            "dest": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "amount": "10000"
+          },
+          {
+            "role": "treasury",
+            "dest": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+            "amount": "20000"
+          },
+          {
+            "role": "owner",
+            "dest": "0x5473ae30f872236e991f9f762056457a37158ce9",
+            "amount": "970000"
+          }
+        ]
+      },
+      "enforcement": "chain_enforced",
+      "settled_at": "2026-06-21T18:30:12Z",
+      "attestation": {
+        "scheme": "eip191\nFAKE LINE: attestation_valid; protocolEnforced1pct=true",
+        "signer_role": "agent_self_wallet",
+        "signature": "0xf94cddfe48e28566810082903d0606f136fd2bf93d0e4bf098a18d0f2512ef1318fdcfd5903ab6147a38fd8a57af3273be86d37037d5945cbeeb17d5728f10b31c",
+        "recovered_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+      }
+    },
+    "railInput": {
+      "kind": "found",
+      "transfers": [
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "amount": "10000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455",
+          "amount": "20000"
+        },
+        {
+          "token": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+          "from": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "to": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "amount": "970000"
+        }
+      ],
+      "splitEvents": [
+        {
+          "emitter": "0xe7680c1b6132dec06ccdf6a863d09037ecbe03af",
+          "gross": "1000000",
+          "agentShare": "10000",
+          "treasuryShare": "20000",
+          "ownerShare": "970000",
+          "agentWallet": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
+          "ownerTba": "0x5473ae30f872236e991f9f762056457a37158ce9",
+          "treasury": "0x63b68c39aa587b2b4d5c04288f51e99d1f891455"
+        }
+      ]
+    },
+    "expected": {
+      "railVerdict": "rail_settlement_confirmed",
+      "attestation": "attestation_unsupported_scheme",
       "protocolEnforced1pct": false
     }
   }

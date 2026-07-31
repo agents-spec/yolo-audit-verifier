@@ -31,7 +31,9 @@ def to_read(receipt, rail_input):
 def main():
     failures = 0
     for fx in FIXTURES:
-        a = rv.assess_rail_settlement(fx["receipt"], to_read(fx["receipt"], fx["railInput"]))
+        # opContext OPTIONAL — sold-agent operational-signer, point-in-time resolution (Option B).
+        # Absent in every pre-existing fixture -> falls back to the unchanged home.self_wallet check.
+        a = rv.assess_rail_settlement(fx["receipt"], to_read(fx["receipt"], fx["railInput"]), None, fx.get("opContext"))
         exp = fx["expected"]
         checks = [
             ("railVerdict", a["railVerdict"], exp["railVerdict"]),

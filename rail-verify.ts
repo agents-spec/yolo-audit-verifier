@@ -14,6 +14,14 @@
 //         settlements were omitted),
 //     (c) anything about transfers outside the declared legs.
 //   A stub for an un-wired rail returns rail_unsupported — NEVER a false rail_settlement_confirmed.
+//
+// INVARIANT — positive-match only, never negative enumeration: every downstream consumer of
+// AttestationVerdict (protocolEnforced1pct below, both ERC-8004 adapters in lib/erc8004/) gates on
+// `=== "attestation_valid"`, never on `!== "attestation_invalid"`. This is WHY adding
+// attestation_unsupported_scheme required zero changes at those call sites — a negative-enumeration
+// check would have silently treated the new verdict as valid. Any new AttestationVerdict value added in
+// the future gets this safety for free ONLY if every consumer keeps gating on the single known-good
+// value. Do not write `!== "attestation_invalid"` anywhere; write `=== "attestation_valid"`.
 
 import { createPublicClient, http, recoverMessageAddress, type Chain } from "viem";
 import { base, baseSepolia } from "viem/chains";
@@ -64,18 +72,153 @@ function jcsCanonicalize(value: unknown): string {
   return JSON.stringify(value);
 }
 
-// ── attestation (EIP-191 over JCS(signed_core); recovered must == home.self_wallet) ─────────────
-export type AttestationVerdict = "attestation_valid" | "attestation_invalid";
-export async function verifyAttestation(receipt: SettlementReceipt): Promise<{ verdict: AttestationVerdict; recovered: string | null; detail: string }> {
+// ── operational-signer point-in-time resolution (sold-agent handoff, Option B) ──────────────────
+// Resolves who was the AUTHORITATIVE operational signer for a tokenId AT A GIVEN BLOCK, replaying the
+// on-chain OperationalSignerRegistry designation history + the NFT's own Transfer history — mirrors the
+// registry's (tokenId, owner)-keyed resolve() semantics, POINT-IN-TIME instead of "now". PURE, no
+// network: designations/nftTransfers are on-chain facts the caller (a reader, or a fixture) supplies;
+// this function never trusts anything from the receipt itself.
+//
+// PER-SEQ, not "current signer": the caller passes the atBlock of THIS receipt's OWN settlement, so a
+// seller-era receipt resolves against the signer authoritative when IT was sealed, and a buyer-era
+// receipt resolves against the signer authoritative when IT was sealed. A later rebind never
+// retroactively re-validates old history, and an old (correctly-signed, seller-era) receipt never fails
+// just because a rebind happened since. This is the whole point: forgery resistance rests on the
+// on-chain designation + transfer history being unforgeable and chain-sourced, never asserted by the
+// receipt. MUST be byte-identical to rail-verify.py's resolve_authoritative_signer.
+export type OperationalDesignation = { owner: string; signer: string; atBlock: number };
+export type NftTransferRecord = { from: string; to: string; atBlock: number };
+export interface OperationalSignerHistory {
+  designations: OperationalDesignation[]; // OperationalSignerRegistry's FULL append-only history (every owner-era)
+  nftTransfers: NftTransferRecord[];      // the NFT's FULL Transfer history for this tokenId (mint included)
+}
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+// The NFT owner at atBlock: the LATEST transfer at-or-before atBlock (mint is itself a Transfer from the
+// zero address, so this covers the very first owner too, provided the caller supplies the mint transfer).
+function ownerAtBlock(transfers: NftTransferRecord[], atBlock: number): string | null {
+  let owner: string | null = null;
+  let bestBlock = -1;
+  for (const t of transfers) {
+    if (t.atBlock <= atBlock && t.atBlock > bestBlock) { owner = t.to.toLowerCase(); bestBlock = t.atBlock; }
+  }
+  return owner;
+}
+
+// The latest designation made BY `owner` at-or-before atBlock — mirrors the registry's _signer[(tokenId,
+// owner)] mapping: only THAT owner's own designations are ever reachable while they hold the token.
+function latestDesignationAtOrBefore(designations: OperationalDesignation[], owner: string, atBlock: number): OperationalDesignation | null {
+  let best: OperationalDesignation | null = null;
+  for (const d of designations) {
+    if (d.owner.toLowerCase() !== owner) continue;
+    if (d.atBlock > atBlock) continue;
+    if (!best || d.atBlock > best.atBlock) best = d;
+  }
+  return best;
+}
+
+export function resolveAuthoritativeSigner(
+  atBlock: number,
+  history: OperationalSignerHistory,
+  fallbackSelfWallet: string,
+): { signer: string | null; detail: string } {
+  // Never designated (for this token, ever) → migration-safety fallback: self_wallet IS the signer,
+  // exactly the pre-handoff world — existing agents (Argus #1, rail-seal-test) never break.
+  if (history.designations.length === 0) {
+    return { signer: fallbackSelfWallet, detail: "no operational-signer designation ever made for this token — migration-safety fallback to home.self_wallet" };
+  }
+  const owner = ownerAtBlock(history.nftTransfers, atBlock);
+  if (!owner) {
+    return { signer: null, detail: `no NFT transfer (mint included) at or before block ${atBlock} — cannot determine the owner at this point in time` };
+  }
+  const latest = latestDesignationAtOrBefore(history.designations, owner, atBlock);
+  if (!latest) {
+    // the owner-at-atBlock exists but hadn't designated yet as of atBlock — the transfer→rebind GAP.
+    return { signer: null, detail: `owner ${owner} (holder at block ${atBlock}) had not yet designated an operational signer — transfer→rebind gap, fail-safe pause` };
+  }
+  if (latest.signer.toLowerCase() === ZERO_ADDRESS) {
+    return { signer: null, detail: `owner ${owner} explicitly revoked the operational signer at block ${latest.atBlock} (fail-safe pause)` };
+  }
+  return { signer: latest.signer, detail: `owner ${owner} designated ${latest.signer} at block ${latest.atBlock}, authoritative at block ${atBlock}` };
+}
+
+// ── attestation.scheme display sanitization (byte-identical, MUST match rail-verify.py) ───────────
+// scheme is UNAUTHENTICATED input (outside the signed preimage, see the backlog doc entry) reaching
+// the verifier's own OUTPUT (a fail detail string) the moment the scheme gate below rejects it — same
+// bug class as the original gap, relocated to the error path: trusting a field nobody signed. Never
+// interpolate the raw value. This function is deliberately NOT "escape what the language's own
+// stringifier produces" (JS null/undefined/number formatting diverges from Python's None/int/float
+// formatting on sight — that's exactly what broke without this) — it defines its own canonical,
+// language-independent representation per logical type, then caps + hex-escapes any string content by
+// UNICODE CODE POINT (never UTF-16 code unit, never native encode()/decode()) so astral characters and
+// lone surrogates can't produce different output between the two runtimes either.
+function sanitizeSchemeForDisplay(raw: unknown): string {
+  const CAP = 64;
+  let s: string;
+  if (typeof raw === "string") { s = raw; }
+  else if (raw === null || raw === undefined) { return "null"; }
+  else if (typeof raw === "boolean") { return "<non-string:boolean>"; }
+  else if (typeof raw === "number") { return "<non-string:number>"; }
+  else { return "<non-string:object>"; }
+
+  let out = "";
+  for (const ch of s) { // for...of iterates by CODE POINT, not UTF-16 code unit — matches Python's per-char iteration
+    const cp = ch.codePointAt(0)!;
+    let piece: string;
+    if (cp >= 0x20 && cp <= 0x7e && ch !== "\\") piece = ch; // printable ASCII, backslash excluded (self-consistency of the escape scheme)
+    else if (cp <= 0xff) piece = `\\x${cp.toString(16).padStart(2, "0")}`;
+    else if (cp <= 0xffff) piece = `\\u${cp.toString(16).padStart(4, "0")}`;
+    else piece = `\\U${cp.toString(16).padStart(8, "0")}`;
+    if (out.length + piece.length > CAP) { out += "…"; break; }
+    out += piece;
+  }
+  return out;
+}
+
+// ── attestation (EIP-191 over JCS(signed_core)) ──────────────────────────────────────────────────
+// Recovered signer must match the AUTHORITATIVE signer: when opContext is supplied, that's the
+// point-in-time resolveAuthoritativeSigner result (sold-agent aware); when omitted (every existing
+// caller, unchanged), it's the sticky home.self_wallet — IDENTICAL to the pre-handoff behavior.
+export type AttestationVerdict = "attestation_valid" | "attestation_invalid" | "attestation_unsupported_scheme";
+// scheme gate FIRST, before any recovery call: this verifier only knows how to check "eip191". A
+// receipt declaring a different scheme with a VALID eip191 signature would otherwise recover cleanly
+// and report a confident pass for an algorithm this code never actually checked — the verifier's own
+// output would then claim more than it verified. Fail closed as "unsupported" — a distinct verdict
+// from attestation_invalid, since "we don't know how to check this" is not the same claim as "we
+// checked it and it's wrong."
+export async function verifyAttestation(
+  receipt: SettlementReceipt,
+  opContext?: { atBlock: number; history: OperationalSignerHistory } | null,
+): Promise<{ verdict: AttestationVerdict; recovered: string | null; detail: string }> {
   const { attestation, ...core } = receipt; // signed_core = everything except the attestation block
+  if (attestation.scheme !== "eip191") {
+    return {
+      verdict: "attestation_unsupported_scheme",
+      recovered: null,
+      detail: `unsupported signature scheme "${sanitizeSchemeForDisplay(attestation.scheme)}" — this verifier only checks eip191; refusing to run eip191 recovery against a receipt declaring a different scheme`,
+    };
+  }
   const preimage = jcsCanonicalize(core);
   try {
     const recovered = await recoverMessageAddress({ message: preimage, signature: attestation.signature as `0x${string}` });
-    const ok = recovered.toLowerCase() === receipt.home.self_wallet.toLowerCase();
+    let authoritative: string;
+    let resolutionDetail: string;
+    if (opContext) {
+      const resolved = resolveAuthoritativeSigner(opContext.atBlock, opContext.history, receipt.home.self_wallet);
+      if (resolved.signer === null) {
+        return { verdict: "attestation_invalid", recovered, detail: `no authoritative operational signer at block ${opContext.atBlock} (${resolved.detail})` };
+      }
+      authoritative = resolved.signer;
+      resolutionDetail = resolved.detail;
+    } else {
+      authoritative = receipt.home.self_wallet;
+      resolutionDetail = "no on-chain operational-signer history supplied — checked against home.self_wallet";
+    }
+    const ok = recovered.toLowerCase() === authoritative.toLowerCase();
     return {
       verdict: ok ? "attestation_valid" : "attestation_invalid",
       recovered,
-      detail: ok ? "agent home self_wallet signed this receipt" : `recovered ${recovered} != home.self_wallet ${receipt.home.self_wallet}`,
+      detail: ok ? `agent's authoritative operational signer signed this receipt (${resolutionDetail})` : `recovered ${recovered} != authoritative operational signer ${authoritative} (${resolutionDetail})`,
     };
   } catch (e) {
     return { verdict: "attestation_invalid", recovered: null, detail: `signature malformed: ${(e as Error).message}` };
@@ -216,6 +359,14 @@ function settlementRoutedMismatch(
 //   (2) MOVEMENT (defense-in-depth) — every declared leg was actually sent BY the pinned contract
 //       (Transfer.from == pinned).
 // Both required; missing either, or a rail with no pinned deployment, → not bound.
+//
+// KNOWN GAP — no log_index pinning: leg matching below is CONTENT-only (token/dest/amount/from) via
+// .some() over every Transfer in the tx — sound for one settlement per tx (the only case exercised so
+// far), ambiguous the moment a tx stacks more than one settlement's legs (a leg from one settlement
+// could satisfy .some() against a Transfer that actually belongs to a different settlement in the same
+// tx, if their token/dest/amount happen to coincide). Dead path today (no caller emits a stacked-tx leg
+// proof yet). Fix: pin each leg to a specific event log_index at send time, and match by log_index
+// instead of content when present, rather than trusting "any log that happens to match."
 function checkSplitContractBinding(
   receipt: SettlementReceipt,
   transfers: RailTransfer[],
@@ -436,11 +587,15 @@ const OMISSION_NOTE =
 
 // Split assessment — UNCHANGED logic, now returning the funding-free core. The funding facet is applied
 // in the exported assessRailSettlement wrapper below; this core never sees it (computed independently).
-async function assessRailCore(receipt: SettlementReceipt, read: RailRead): Promise<RailAssessmentCore> {
-  const att = await verifyAttestation(receipt);
+async function assessRailCore(
+  receipt: SettlementReceipt,
+  read: RailRead,
+  opContext?: { atBlock: number; history: OperationalSignerHistory } | null,
+): Promise<RailAssessmentCore> {
+  const att = await verifyAttestation(receipt, opContext);
   const split = checkSplitConsistency(receipt);
   const checks: RailCheck[] = [
-    { label: "Receipt attestation recovers to home.self_wallet", result: att.verdict === "attestation_valid" ? "pass" : "fail", detail: att.detail },
+    { label: "Receipt attestation recovers to the authoritative signer (home.self_wallet, or the current designated operational signer)", result: att.verdict === "attestation_valid" ? "pass" : "fail", detail: att.detail },
     { label: "Split legs sum to amount; agent == ceil(1%) (AgentShareCore rule)", result: split.ok ? "pass" : "fail", detail: split.detail },
   ];
 
@@ -448,7 +603,10 @@ async function assessRailCore(receipt: SettlementReceipt, read: RailRead): Promi
     let t = tone, n = note;
     if (att.verdict === "attestation_invalid") {
       if (railVerdict === "rail_settlement_confirmed" && t === "ok") t = "warn"; // payments real but receipt unsigned → not green
-      n = `ATTESTATION INVALID — this receipt is NOT signed by the agent's home self_wallet (${att.detail}). ` + n;
+      n = `ATTESTATION INVALID — this receipt is NOT signed by the authoritative signer (${att.detail}). ` + n;
+    } else if (att.verdict === "attestation_unsupported_scheme") {
+      if (railVerdict === "rail_settlement_confirmed" && t === "ok") t = "warn"; // payments real but attestation unverifiable → not green
+      n = `ATTESTATION SCHEME UNSUPPORTED — this verifier does not check the declared signature scheme, so the attestation is NOT verified (${att.detail}). ` + n;
     }
     return {
       railVerdict,
@@ -569,8 +727,13 @@ export function assessFundingVerdict(receipt: SettlementReceipt, fundingRead: Ra
 
 // The exported assessor: the split assessment (computed INDEPENDENTLY by assessRailCore — railVerdict,
 // splitConsistent, protocolEnforced1pct unchanged) PLUS the orthogonal funding facet with OQ-10 gating.
-export async function assessRailSettlement(receipt: SettlementReceipt, read: RailRead, fundingRead?: RailRead | null): Promise<RailAssessment> {
-  const a = await assessRailCore(receipt, read);
+export async function assessRailSettlement(
+  receipt: SettlementReceipt,
+  read: RailRead,
+  fundingRead?: RailRead | null,
+  opContext?: { atBlock: number; history: OperationalSignerHistory } | null,
+): Promise<RailAssessment> {
+  const a = await assessRailCore(receipt, read, opContext);
   const fundingVerdict = assessFundingVerdict(receipt, fundingRead);
   let tone = a.tone, note = a.note;
   const checks = a.checks.slice();

@@ -12,13 +12,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   assessRailSettlement, parseXrplSettlement, parseSolanaSettlement,
-  type SettlementReceipt, type RailRead,
+  type SettlementReceipt, type RailRead, type OperationalSignerHistory,
 } from "../rail-verify";
 
 type Fixture = {
   name: string;
   receipt: SettlementReceipt;
   railInput: RailRead | { chain: "xrpl"; legResults: Array<{ reachable: boolean; tx: unknown }> } | { chain: "solana"; getTx: { reachable: boolean; tx: unknown } };
+  // OPTIONAL — sold-agent operational-signer, point-in-time resolution (Option B). Absent in every
+  // pre-existing fixture -> assessRailSettlement falls back to the unchanged home.self_wallet check.
+  opContext?: { atBlock: number; history: OperationalSignerHistory };
   expected: { railVerdict: string; attestation: string; protocolEnforced1pct: boolean };
 };
 
@@ -35,7 +38,7 @@ function toRead(receipt: SettlementReceipt, railInput: Fixture["railInput"]): Ra
 describe("rail-verify — public 3-rail settlement confirm demos (static fixtures, offline)", () => {
   for (const fx of FIXTURES) {
     it(fx.name, async () => {
-      const a = await assessRailSettlement(fx.receipt, toRead(fx.receipt, fx.railInput));
+      const a = await assessRailSettlement(fx.receipt, toRead(fx.receipt, fx.railInput), null, fx.opContext ?? null);
       assert.equal(a.railVerdict, fx.expected.railVerdict, `railVerdict for ${fx.name}`);
       assert.equal(a.attestation, fx.expected.attestation, `attestation for ${fx.name}`);
       assert.equal(a.protocolEnforced1pct, fx.expected.protocolEnforced1pct, `protocolEnforced1pct for ${fx.name}`);

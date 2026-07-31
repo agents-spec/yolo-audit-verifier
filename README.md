@@ -117,6 +117,49 @@ The same fixtures producing the same verdicts in both languages is the cross-lan
 
 ---
 
+## Changelog
+
+### 2026-07-31 — signature-scheme verification gap fixed
+
+**Prior behavior:** `verifyAttestation` / `verify_attestation` recovered a settlement
+receipt's EIP-191 signature and reported `attestation_valid` — and, if every other
+check passed, `protocolEnforced1pct = true` — whenever recovery succeeded and the
+recovered address matched the authoritative signer, regardless of what
+`attestation.scheme` declared. Because the verifier only ever implemented EIP-191
+recovery, a receipt declaring a different (unimplemented) `scheme`, carrying a
+signature that happened to be valid under EIP-191, still produced
+`attestation_valid`. `protocolEnforced1pct = true` is the strongest claim this
+verifier makes; it was being asserted for an algorithm the verifier never checked.
+
+**Current behavior:** `attestation.scheme` is checked against `"eip191"` before any
+recovery call. Anything else fails closed with a new, distinct verdict —
+`attestation_unsupported_scheme` — never conflated with `attestation_invalid` (a
+broken signature) and never treated as valid. `protocolEnforced1pct` is `false` for
+this verdict.
+
+**Scope:** no record produced by Yolo's own systems is affected. `protocolEnforced1pct`
+is computed at verify time and is never persisted, and every record Yolo's own
+systems have ever sealed carries `scheme: "eip191"` by construction — there is no
+code path in Yolo's own stack that produces any other value. Exploiting this required
+a hand-constructed record declaring a non-`eip191` scheme; nothing Yolo has sealed
+does that.
+
+**If you cloned an earlier version:** update before trusting `attestation_valid` /
+`protocolEnforced1pct` output from this verifier. If you independently recorded a
+`protocolEnforced1pct = true` result for a receipt declaring a non-`eip191` scheme,
+re-verify it against current code — that result may be a false positive.
+
+Also fixed alongside: the rejection path now sanitizes the (unauthenticated)
+`scheme` value before including it in any output, rather than interpolating it raw
+— an unsanitized value could otherwise carry embedded newlines or non-string types
+that render differently between the TS and Python implementations.
+
+Shipping alongside in this same update: point-in-time operational-signer resolution
+(`resolveAuthoritativeSigner`, fixtures `h`–`k`) for a sold-agent handoff scenario —
+this mechanism is **unwired** (no live deployment resolves it in production today),
+**unaudited**, and its input format is subject to change at the next record-format
+version. Present in this release as verifier logic and fixtures only.
+
 ## Honest status
 - **Live on Base mainnet:** the audit chain and its anchoring — settlements are sealed and Merkle roots are anchored on-chain today.
 - **Proven on testnet + fixtures:** the 97/1/2 settlement split, the three-rail verifier (with TS↔Python parity), the bounded-autonomy runtime, and the standards bindings (AP2 / x402 / ERC-8004) are demonstrated end-to-end on Base Sepolia, other testnets, and committed fixtures — including a live ERC-8004 round-trip on Base Sepolia.

@@ -16,6 +16,14 @@ Reuse: rfc8785 (canon.py), urllib JSON-RPC (yolo-verify.py). XRPL/Solana readers
 rail_unsupported (NOT a false pass), exactly like the TS.
 
 Run the parity emitter:  python3 rail-verify.py --parity fixtures.json   (emits per-fixture verdicts as JSON)
+
+INVARIANT — positive-match only, never negative enumeration: every downstream consumer of the
+attestation verdict (protocolEnforced1pct below, both ERC-8004 adapters) gates on
+`== "attestation_valid"`, never on `!= "attestation_invalid"`. This is WHY adding
+attestation_unsupported_scheme required zero changes at those call sites — a negative-enumeration check
+would have silently treated the new verdict as valid. Any new verdict value added in the future gets
+this safety for free ONLY if every consumer keeps gating on the single known-good value. Do not write
+`!= "attestation_invalid"` anywhere; write `== "attestation_valid"`.
 """
 import json
 import re
@@ -55,19 +63,137 @@ def signed_core_preimage(receipt: dict) -> str:
     return rfc8785.dumps(core).decode("utf-8")
 
 
-# ── attestation: EIP-191 recover over JCS(signed_core); must == home.self_wallet ────────────────
-def verify_attestation(receipt: dict) -> dict:
+# ── operational-signer point-in-time resolution (sold-agent handoff, Option B) ────────────────────
+# Resolves who was the AUTHORITATIVE operational signer for a tokenId AT A GIVEN BLOCK, replaying the
+# on-chain OperationalSignerRegistry designation history + the NFT's own Transfer history — mirrors the
+# registry's (tokenId, owner)-keyed resolve() semantics, POINT-IN-TIME instead of "now". PURE, no
+# network: designations/nftTransfers are on-chain facts the caller (a reader, or a fixture) supplies;
+# this function never trusts anything from the receipt itself.
+#
+# PER-SEQ, not "current signer": the caller passes the atBlock of THIS receipt's OWN settlement, so a
+# seller-era receipt resolves against the signer authoritative when IT was sealed, and a buyer-era
+# receipt resolves against the signer authoritative when IT was sealed. A later rebind never
+# retroactively re-validates old history, and an old (correctly-signed, seller-era) receipt never fails
+# just because a rebind happened since. MUST be byte-identical to rail-verify.ts's resolveAuthoritativeSigner.
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
+
+def _owner_at_block(transfers: list, at_block: int):
+    """The NFT owner at at_block: the LATEST transfer at-or-before at_block (mint is itself a Transfer
+    from the zero address, so this covers the very first owner too, given the mint transfer)."""
+    owner, best_block = None, -1
+    for t in transfers:
+        if t["atBlock"] <= at_block and t["atBlock"] > best_block:
+            owner, best_block = t["to"].lower(), t["atBlock"]
+    return owner
+
+
+def _latest_designation_at_or_before(designations: list, owner: str, at_block: int):
+    """The latest designation made BY owner at-or-before at_block — mirrors the registry's
+    _signer[(tokenId, owner)] mapping: only THAT owner's own designations are ever reachable."""
+    best = None
+    for d in designations:
+        if d["owner"].lower() != owner:
+            continue
+        if d["atBlock"] > at_block:
+            continue
+        if best is None or d["atBlock"] > best["atBlock"]:
+            best = d
+    return best
+
+
+def resolve_authoritative_signer(at_block: int, history: dict, fallback_self_wallet: str) -> dict:
+    designations = history.get("designations") or []
+    nft_transfers = history.get("nftTransfers") or []
+    # Never designated (for this token, ever) -> migration-safety fallback: self_wallet IS the signer,
+    # exactly the pre-handoff world -- existing agents (Argus #1, rail-seal-test) never break.
+    if not designations:
+        return {"signer": fallback_self_wallet,
+                "detail": "no operational-signer designation ever made for this token — migration-safety fallback to home.self_wallet"}
+    owner = _owner_at_block(nft_transfers, at_block)
+    if not owner:
+        return {"signer": None,
+                "detail": f"no NFT transfer (mint included) at or before block {at_block} — cannot determine the owner at this point in time"}
+    latest = _latest_designation_at_or_before(designations, owner, at_block)
+    if not latest:
+        return {"signer": None,
+                "detail": f"owner {owner} (holder at block {at_block}) had not yet designated an operational signer — transfer→rebind gap, fail-safe pause"}
+    if latest["signer"].lower() == ZERO_ADDRESS:
+        return {"signer": None,
+                "detail": f"owner {owner} explicitly revoked the operational signer at block {latest['atBlock']} (fail-safe pause)"}
+    return {"signer": latest["signer"],
+            "detail": f"owner {owner} designated {latest['signer']} at block {latest['atBlock']}, authoritative at block {at_block}"}
+
+
+# ── attestation.scheme display sanitization (byte-identical, MUST match rail-verify.ts) ──────────
+# scheme is UNAUTHENTICATED input (outside the signed preimage, see the backlog doc entry) reaching
+# the verifier's own OUTPUT (a fail detail string) the moment the scheme gate below rejects it — same
+# bug class as the original gap, relocated to the error path: trusting a field nobody signed. Never
+# interpolate the raw value. This is deliberately NOT "escape whatever str()/repr() produces" — Python's
+# None/int/float formatting diverges from JS's null/undefined/number formatting on sight, which is
+# exactly what broke without this. Defines its own canonical, language-independent representation per
+# logical type, then caps + hex-escapes any string content by UNICODE CODE POINT (never encode()/UTF-8
+# bytes) so astral characters and lone surrogates can't produce different output between runtimes.
+def _sanitize_scheme_for_display(raw) -> str:
+    cap = 64
+    if isinstance(raw, str):
+        s = raw
+    elif raw is None:
+        return "null"
+    elif isinstance(raw, bool):  # MUST precede the int/float check — bool is a subclass of int in Python
+        return "<non-string:boolean>"
+    elif isinstance(raw, (int, float)):
+        return "<non-string:number>"
+    else:
+        return "<non-string:object>"
+
+    out = ""
+    for ch in s:  # Python str iterates by CODE POINT natively — matches TS's for...of, never UTF-16 code units
+        cp = ord(ch)
+        if 0x20 <= cp <= 0x7e and ch != "\\":
+            piece = ch
+        elif cp <= 0xff:
+            piece = f"\\x{cp:02x}"
+        elif cp <= 0xffff:
+            piece = f"\\u{cp:04x}"
+        else:
+            piece = f"\\U{cp:08x}"
+        if len(out) + len(piece) > cap:
+            out += "…"
+            break
+        out += piece
+    return out
+
+
+# ── attestation: EIP-191 recover over JCS(signed_core) ───────────────────────────────────────────
+# Recovered signer must match the AUTHORITATIVE signer: when op_context is supplied, that's the
+# point-in-time resolve_authoritative_signer result (sold-agent aware); when omitted (every existing
+# caller, unchanged), it's the sticky home.self_wallet -- IDENTICAL to the pre-handoff behavior.
+def verify_attestation(receipt: dict, op_context: dict = None) -> dict:
     att = receipt.get("attestation") or {}
+    # scheme gate FIRST, before any recovery call — see rail-verify.ts::verifyAttestation for why.
+    if att.get("scheme") != "eip191":
+        return {"verdict": "attestation_unsupported_scheme", "recovered": None,
+                "detail": f'unsupported signature scheme "{_sanitize_scheme_for_display(att.get("scheme"))}" — this verifier only checks eip191; refusing to run eip191 recovery against a receipt declaring a different scheme'}
     preimage = signed_core_preimage(receipt)
     self_wallet = (receipt.get("home") or {}).get("self_wallet", "")
     try:
         recovered = Account.recover_message(encode_defunct(text=preimage), signature=att.get("signature"))
-        ok = recovered.lower() == self_wallet.lower()
+        if op_context:
+            resolved = resolve_authoritative_signer(op_context["atBlock"], op_context["history"], self_wallet)
+            if resolved["signer"] is None:
+                return {"verdict": "attestation_invalid", "recovered": recovered,
+                        "detail": f"no authoritative operational signer at block {op_context['atBlock']} ({resolved['detail']})"}
+            authoritative, resolution_detail = resolved["signer"], resolved["detail"]
+        else:
+            authoritative = self_wallet
+            resolution_detail = "no on-chain operational-signer history supplied — checked against home.self_wallet"
+        ok = recovered.lower() == authoritative.lower()
         return {
             "verdict": "attestation_valid" if ok else "attestation_invalid",
             "recovered": recovered,
-            "detail": "agent home self_wallet signed this receipt" if ok
-                      else f"recovered {recovered} != home.self_wallet {self_wallet}",
+            "detail": f"agent's authoritative operational signer signed this receipt ({resolution_detail})" if ok
+                      else f"recovered {recovered} != authoritative operational signer {authoritative} ({resolution_detail})",
         }
     except Exception as e:  # malformed signature
         return {"verdict": "attestation_invalid", "recovered": None, "detail": f"signature malformed: {e}"}
@@ -101,10 +227,8 @@ def check_split_consistency(receipt: dict) -> dict:
 def _rpc_call(rpc_url: str, method: str, params: list):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
     # User-Agent: Cloudflare-fronted RPCs (e.g. sepolia.base.org) reject urllib's default UA with HTTP 403.
-    # Match the TS side exactly: rail-verify.ts's viem client makes this same call over Node's global
-    # fetch (undici), which sends "node" verbatim — not a made-up string — so both runtimes present as
-    # the same client to the RPC. Transport-only — does not touch the verdict/assess logic or parity.
-    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json", "User-Agent": "node"})
+    # Transport-only — does not touch the verdict/assess logic or TS<->Python parity.
+    req = urllib.request.Request(rpc_url, data=body, headers={"content-type": "application/json", "User-Agent": "yolo-audit-verifier"})
     with urllib.request.urlopen(req, timeout=25) as resp:
         return json.loads(resp.read()).get("result")
 
@@ -206,6 +330,14 @@ def settlement_routed_mismatch(receipt, e, agent, treasury, owner):
 #   (2) MOVEMENT (defense-in-depth) — every declared leg was actually sent BY the pinned contract
 #       (Transfer.from == pinned).
 # Both required; missing either, or a rail with no pinned deployment, -> not bound.
+#
+# KNOWN GAP -- no log_index pinning: leg matching below is CONTENT-only (token/dest/amount/from) over
+# every Transfer in the tx -- sound for one settlement per tx (the only case exercised so far),
+# ambiguous the moment a tx stacks more than one settlement's legs (a leg from one settlement could
+# satisfy the content match against a Transfer that actually belongs to a different settlement in the
+# same tx, if their token/dest/amount happen to coincide). Dead path today (no caller emits a stacked-tx
+# leg proof yet). Fix: pin each leg to a specific event log_index at send time, and match by log_index
+# instead of content when present, rather than trusting "any log that happens to match."
 def check_split_contract_binding(receipt, transfers, split_events):
     pinned = SETTLEMENT_SPLIT.get(receipt["rail"])
     if not pinned:
@@ -408,11 +540,11 @@ def read_rail_settlement(receipt: dict, rpc_url=None) -> dict:
 # ── verdict (PURE given the rail read) — mirrors assessRailCore in rail-verify.ts ────────────────
 # Split assessment — UNCHANGED logic, returns the funding-free core. The funding facet is applied in the
 # assess_rail_settlement wrapper below; this core never sees it (computed independently).
-def _assess_rail_core(receipt: dict, read: dict) -> dict:
-    att = verify_attestation(receipt)
+def _assess_rail_core(receipt: dict, read: dict, op_context: dict = None) -> dict:
+    att = verify_attestation(receipt, op_context)
     split = check_split_consistency(receipt)
     checks = [
-        {"label": "Receipt attestation recovers to home.self_wallet",
+        {"label": "Receipt attestation recovers to the authoritative signer (home.self_wallet, or the current designated operational signer)",
          "result": "pass" if att["verdict"] == "attestation_valid" else "fail", "detail": att["detail"]},
         {"label": "Split legs sum to amount; agent == ceil(1%) (AgentShareCore rule)",
          "result": "pass" if split["ok"] else "fail", "detail": split["detail"]},
@@ -423,7 +555,11 @@ def _assess_rail_core(receipt: dict, read: dict) -> dict:
         if att["verdict"] == "attestation_invalid":
             if rail_verdict == "rail_settlement_confirmed" and t == "ok":
                 t = "warn"
-            n = f"ATTESTATION INVALID — this receipt is NOT signed by the agent's home self_wallet ({att['detail']}). " + n
+            n = f"ATTESTATION INVALID — this receipt is NOT signed by the authoritative signer ({att['detail']}). " + n
+        elif att["verdict"] == "attestation_unsupported_scheme":
+            if rail_verdict == "rail_settlement_confirmed" and t == "ok":
+                t = "warn"
+            n = f"ATTESTATION SCHEME UNSUPPORTED — this verifier does not check the declared signature scheme, so the attestation is NOT verified ({att['detail']}). " + n
         return {
             "railVerdict": rail_verdict,
             "attestation": att["verdict"],
@@ -552,8 +688,8 @@ def funding_verdict_from_read(receipt: dict, funding_read) -> str:
 
 # The exported assessor: split assessment (computed INDEPENDENTLY by _assess_rail_core) PLUS the
 # orthogonal funding facet with OQ-10 gating. railVerdict/splitConsistent/protocolEnforced1pct unchanged.
-def assess_rail_settlement(receipt: dict, read: dict, funding_read=None) -> dict:
-    a = _assess_rail_core(receipt, read)
+def assess_rail_settlement(receipt: dict, read: dict, funding_read=None, op_context: dict = None) -> dict:
+    a = _assess_rail_core(receipt, read, op_context)
     fv = funding_verdict_from_read(receipt, funding_read)
     tone, note, checks = a["tone"], a["note"], list(a["checks"])
     if fv == "funding_confirmed":
@@ -594,7 +730,8 @@ def _parity(path: str):
         funding_read = None
         if fx.get("fundingRead") is not None:
             funding_read = _resolve_read(fx["receipt"], fx["fundingRead"])  # ready RailRead or chain-raw
-        a = assess_rail_settlement(fx["receipt"], read, funding_read)
+        op_context = fx.get("opContext")  # {"atBlock": N, "history": {"designations": [...], "nftTransfers": [...]}}
+        a = assess_rail_settlement(fx["receipt"], read, funding_read, op_context)
         out.append({
             "name": fx["name"],
             "railVerdict": a["railVerdict"],
