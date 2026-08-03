@@ -31,11 +31,11 @@ The verifier is the open-source slice of a larger system. What Yolo builds:
 
 | Layer | What it is |
 |---|---|
-| **Identity** | Each agent is an ERC-721 token; settlement destinations and operational signers resolve from on-chain identity. |
-| **Bounded-autonomy runtime** | A deterministic enforcer **outside the model**: the agent *proposes*, the enforcer *permits or escalates* against a fixed box (per-action ceiling, recipient allow-list, rails). Clockless and fail-safe — an unbounded model never moves money on its own. |
-| **The seal** | Canonicalize (JCS) → SHA-256 → hash-chain → Merkle root → **anchored on Base mainnet**, append-only. Once anchored, no vendor — including Yolo — can edit it. |
-| **Three rails, one verifier** | Base, XRPL, and Solana settlements all seal into the same chain and verify through the same TS/Python verifier *(this repo)*. |
-| **Standards bindings** | The seal is the evidence underneath the agent-economy standards: **AP2** mandates (authorization), **x402** payments (funding proof), and **ERC-8004** (the seal as a Validation method *and* as evidence-backed Reputation). |
+| **Identity** | Each agent is an ERC-721 token; settlement destinations and operational signers resolve from on-chain identity. *Operational-signer resolution is proven on Base Sepolia, not mainnet.* |
+| **Bounded-autonomy runtime** | A deterministic enforcer **outside the model**: the agent *proposes*, the enforcer *permits or escalates* against a fixed box (per-action ceiling, recipient allow-list, rails). Clockless and fail-safe — an unbounded model never moves money on its own. *Proven on testnet + fixtures, not mainnet.* |
+| **The seal** | Canonicalize (JCS) → SHA-256 → hash-chain → Merkle root → **anchored on Base mainnet**, append-only. Once anchored, no vendor — including Yolo — can edit it. *Live today — see Honest status below.* |
+| **Three rails, one verifier** | Base, XRPL, and Solana settlements all seal into the same chain and verify through the same TS/Python verifier *(this repo)*. *The verifier is proven byte-for-byte on testnet + fixtures; real mainnet settlement is the gated next step.* |
+| **Standards bindings** | The seal is the evidence underneath the agent-economy standards: **AP2** mandates (authorization), **x402** payments (funding proof), and **ERC-8004** (the seal as a Validation method *and* as evidence-backed Reputation). *Proven on testnet + fixtures, not mainnet.* |
 
 ---
 
